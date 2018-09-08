@@ -30,9 +30,9 @@ public:
         VkApplicationInfo ai {};
         ai.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
         ai.pNext = nullptr;
-        ai.pApplicationName = "KanVul_copybuffer";
+        ai.pApplicationName = "KanVul_updatebuffer";
         ai.applicationVersion = 0;
-        ai.pEngineName = "KanVul_copybuffer";
+        ai.pEngineName = "KanVul_updatebuffer";
         ai.engineVersion = 0;
         ai.apiVersion = VK_API_VERSION_1_1;
 
@@ -111,23 +111,22 @@ public:
     }
 
     void Run(void) {
-        /* set up source and destination buffer for blit */
-        VkBuffer src_buf, dst_buf;
+        /* set up buffer for fill */
+        VkBuffer dst_buf;
         VkBufferCreateInfo bi {};
         bi.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
         bi.pNext = nullptr;
         bi.pNext = 0;
         bi.size = 256;
-        bi.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+        bi.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT;
         bi.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
         bi.queueFamilyIndexCount = 0;
         bi.pQueueFamilyIndices = nullptr;
 
-        vkCreateBuffer(_dev, &bi, nullptr, &src_buf);
         vkCreateBuffer(_dev, &bi, nullptr, &dst_buf);
 
         VkMemoryRequirements memreq {};
-        vkGetBufferMemoryRequirements(_dev, src_buf, &memreq);
+        vkGetBufferMemoryRequirements(_dev, dst_buf, &memreq);
 
         VkMemoryAllocateInfo mi {};
         mi.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
@@ -135,22 +134,18 @@ public:
         mi.allocationSize = memreq.size;
         mi.memoryTypeIndex = 0;
 
-        VkDeviceMemory src_mem, dst_mem;
-        vkAllocateMemory(_dev, &mi, nullptr, &src_mem);
+        VkDeviceMemory dst_mem;
         vkAllocateMemory(_dev, &mi, nullptr, &dst_mem);
 
-        uint8_t *pSRC = nullptr;
         uint8_t *pDST = nullptr;
-        vkMapMemory(_dev, src_mem, 0, memreq.size, 0, (void **)&pSRC);
         vkMapMemory(_dev, dst_mem, 0, memreq.size, 0, (void **)&pDST);
-        for (int32_t i = 0; i < 256; i++) {
-            *(pSRC + i) = i;
-            *(pDST + i) = 0xAA;
-        }
-        vkUnmapMemory(_dev, dst_mem);
-        vkUnmapMemory(_dev, src_mem);
 
-        vkBindBufferMemory(_dev, src_buf, src_mem, 0);
+        for (int32_t i = 0; i < 256; i++) {
+            *(pDST + i) = i;
+        }
+
+        vkUnmapMemory(_dev, dst_mem);
+
         vkBindBufferMemory(_dev, dst_buf, dst_mem, 0);
 
         /* record command buffer */
@@ -162,12 +157,17 @@ public:
 
         vkBeginCommandBuffer(_transfer_cmdbuf, &cbi);
 
-        VkBufferCopy region {};
-        region.srcOffset = 0;
-        region.dstOffset = 0;
-        region.size = memreq.size;
+        vkCmdFillBuffer(_transfer_cmdbuf, dst_buf, 0, memreq.size, 0x04030201);
 
-        vkCmdCopyBuffer(_transfer_cmdbuf, src_buf, dst_buf, 1, &region);
+        uint8_t block_at64[64];
+        uint8_t block_at128[64];
+        for (int i = 0; i < 64; i++) {
+            block_at64[i] = 0x8;
+            block_at128[i] = 0x9;
+        }
+
+        vkCmdUpdateBuffer(_transfer_cmdbuf, dst_buf, 64, 64, block_at64);
+        vkCmdUpdateBuffer(_transfer_cmdbuf, dst_buf, 128, 64, block_at128);
 
         vkEndCommandBuffer(_transfer_cmdbuf);
         /* submit command buffer */
@@ -195,9 +195,7 @@ public:
 
         /* clean up */
         vkFreeMemory(_dev, dst_mem, nullptr);
-        vkFreeMemory(_dev, src_mem, nullptr);
         vkDestroyBuffer(_dev, dst_buf, nullptr);
-        vkDestroyBuffer(_dev, src_buf, nullptr);
     }
 public:
     /* vulkan core */

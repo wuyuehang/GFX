@@ -175,7 +175,7 @@ public:
         vkQueueSubmit(_queue, 1, &si, VK_NULL_HANDLE);
         vkQueueWaitIdle(_queue);
 
-        /* varify */
+        /* verify */
         pDST = nullptr;
         vkMapMemory(_dev, dst_mem, 0, memreq.size, 0, (void **)&pDST);
         for (int32_t i = 0; i < 256; i++) {
