@@ -1,16 +1,10 @@
 #include <vulkan/vulkan.h>
 #include <GLFW/glfw3.h>
 #include <iostream>
-#include <fstream>
 #include <vector>
-#include <string>
-#include <cassert>
 
 using std::vector;
 using std::cout;
-using std::string;
-using std::end;
-using std::ifstream;
 
 class KanVul {
 public:
