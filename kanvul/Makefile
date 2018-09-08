@@ -9,10 +9,12 @@ LDFLAGS = -L$(VK_SDK_PATH)/lib -lvulkan `pkg-config --libs glfw3`
 all:
 	g++ $(CXXFLAGS) -o kanvul_init kanvul_init.cpp $(LDFLAGS)
 	g++ $(CXXFLAGS) -o kanvul_copybuffer kanvul_copybuffer.cpp $(LDFLAGS)
+	g++ $(CXXFLAGS) -o kanvul_fillbuffer kanvul_fillbuffer.cpp $(LDFLAGS)
 
 clean:
 	rm -rf kanvul_init
 	rm -rf kanvul_copybuffer
+	rm -rf kanvul_fillbuffer
 
 run:
 	LD_LIBRARY_PATH=$(VK_SDK_PATH)/lib VK_LAYER_PATH=$(VK_SDK_PATH)/etc/explicit_layer.d \
