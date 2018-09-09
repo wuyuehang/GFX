@@ -13,6 +13,7 @@ all:
 	g++ $(CXXFLAGS) -o kanvul_updatebuffer kanvul_updatebuffer.cpp $(LDFLAGS)
 	g++ $(CXXFLAGS) -o kanvul_present kanvul_present.cpp $(LDFLAGS)
 	g++ $(CXXFLAGS) -o kanvul_clearcolorimage kanvul_clearcolorimage.cpp $(LDFLAGS)
+	g++ $(CXXFLAGS) -o kanvul_copybuffertoimage kanvul_copybuffertoimage.cpp $(LDFLAGS)
 
 clean:
 	rm -rf kanvul_init
@@ -21,6 +22,7 @@ clean:
 	rm -rf kanvul_updatebuffer
 	rm -rf kanvul_present
 	rm -rf kanvul_clearcolorimage
+	rm -rf kanvul_copybuffertoimage
 
 run:
 	LD_LIBRARY_PATH=$(VK_SDK_PATH)/lib VK_LAYER_PATH=$(VK_SDK_PATH)/etc/explicit_layer.d \
