@@ -12,7 +12,8 @@ binary = kanvul_init \
 	kanvul_updatebuffer \
 	kanvul_present \
 	kanvul_clearcolorimage \
-	kanvul_copybuffertoimage
+	kanvul_copybuffertoimage \
+	kanvul_compute
 
 all: $(binary)
 
@@ -37,8 +38,15 @@ kanvul_clearcolorimage : kanvul_clearcolorimage.cpp
 kanvul_copybuffertoimage : kanvul_copybuffertoimage.cpp
 	g++ $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
 
+kanvul_compute : kanvul_compute.cpp
+	g++ $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
+
+spv :
+	$(VK_SDK_PATH)/bin/glslangValidator -V kanvul_compute.comp.glsl -o kanvul_compute.spv
+
 clean:
 	rm -rf $(binary)
+	rm *.spv
 
 run:
 	LD_LIBRARY_PATH=$(VK_SDK_PATH)/lib VK_LAYER_PATH=$(VK_SDK_PATH)/etc/explicit_layer.d \
