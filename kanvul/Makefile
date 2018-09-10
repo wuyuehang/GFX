@@ -1,28 +1,44 @@
-VK_SDK_PATH=/home/vk/1.1.82.1/x86_64
+VK_SDK_PATH = /home/vk/1.1.82.1/x86_64
 
 CXXFLAGS = -g -std=c++11 -I$(VK_SDK_PATH)/include
 
 LDFLAGS = -L$(VK_SDK_PATH)/lib -lvulkan `pkg-config --libs glfw3`
 
-.PHONY: clean run
+.PHONY: clean run all
 
-all:
-	g++ $(CXXFLAGS) -o kanvul_init kanvul_init.cpp $(LDFLAGS)
-	g++ $(CXXFLAGS) -o kanvul_copybuffer kanvul_copybuffer.cpp $(LDFLAGS)
-	g++ $(CXXFLAGS) -o kanvul_fillbuffer kanvul_fillbuffer.cpp $(LDFLAGS)
-	g++ $(CXXFLAGS) -o kanvul_updatebuffer kanvul_updatebuffer.cpp $(LDFLAGS)
-	g++ $(CXXFLAGS) -o kanvul_present kanvul_present.cpp $(LDFLAGS)
-	g++ $(CXXFLAGS) -o kanvul_clearcolorimage kanvul_clearcolorimage.cpp $(LDFLAGS)
-	g++ $(CXXFLAGS) -o kanvul_copybuffertoimage kanvul_copybuffertoimage.cpp $(LDFLAGS)
+binary = kanvul_init \
+	kanvul_copybuffer \
+	kanvul_fillbuffer \
+	kanvul_updatebuffer \
+	kanvul_present \
+	kanvul_clearcolorimage \
+	kanvul_copybuffertoimage
+
+all: $(binary)
+
+kanvul_init : kanvul_init.cpp
+	g++ $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
+
+kanvul_copybuffer : kanvul_copybuffer.cpp
+	g++ $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
+
+kanvul_fillbuffer : kanvul_fillbuffer.cpp
+	g++ $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
+
+kanvul_updatebuffer : kanvul_updatebuffer.cpp
+	g++ $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
+
+kanvul_present : kanvul_present.cpp
+	g++ $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
+
+kanvul_clearcolorimage : kanvul_clearcolorimage.cpp
+	g++ $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
+
+kanvul_copybuffertoimage : kanvul_copybuffertoimage.cpp
+	g++ $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
 
 clean:
-	rm -rf kanvul_init
-	rm -rf kanvul_copybuffer
-	rm -rf kanvul_fillbuffer
-	rm -rf kanvul_updatebuffer
-	rm -rf kanvul_present
-	rm -rf kanvul_clearcolorimage
-	rm -rf kanvul_copybuffertoimage
+	rm -rf $(binary)
 
 run:
 	LD_LIBRARY_PATH=$(VK_SDK_PATH)/lib VK_LAYER_PATH=$(VK_SDK_PATH)/etc/explicit_layer.d \
