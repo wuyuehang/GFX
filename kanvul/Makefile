@@ -46,7 +46,7 @@ spv :
 
 clean:
 	rm -rf $(binary)
-	rm *.spv
+	rm -rf *.spv
 
 run:
 	LD_LIBRARY_PATH=$(VK_SDK_PATH)/lib VK_LAYER_PATH=$(VK_SDK_PATH)/etc/explicit_layer.d \

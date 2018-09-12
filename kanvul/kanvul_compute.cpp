@@ -1,8 +1,6 @@
 #include <vulkan/vulkan.h>
-#include <GLFW/glfw3.h>
 #include <iostream>
 #include <vector>
-#include <string>
 #include <fstream>
 
 using std::cout;
@@ -98,7 +96,7 @@ public:
         vkAllocateCommandBuffers(_dev, &cmdBufferInfo, &_cmdbuf);
     }
 
-    void Run(void) {
+    void Run() {
         /* set up destination buffer for compute shader write */
         VkBuffer dst_buf;
         VkBufferCreateInfo bufInfo {};

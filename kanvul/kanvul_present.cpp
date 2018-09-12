@@ -1,51 +1,13 @@
 #include <vulkan/vulkan.h>
 #include <GLFW/glfw3.h>
-#include <iostream>
 #include <vector>
-#include <string>
 #include <cassert>
 
 using std::vector;
-using std::cout;
-using std::string;
 
 class KanVul {
 public:
-    ~KanVul() {}
-    KanVul() {}
-    void InitWindow() {
-        glfwInit();
-        glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-        glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
-        glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
-        _glfw = glfwCreateWindow(800, 800, "KanVul_present", nullptr, nullptr);
-        //glfwShowWindow(_gflw);
-    }
-
-    void DestroyWindow() {
-        glfwDestroyWindow(_glfw);
-        glfwTerminate();
-    }
-
-    void InitWindowSurface() {
-        glfwCreateWindowSurface(_inst, _glfw, nullptr, &_surf);
-    }
-
-    void Run() {
-        while (!glfwWindowShouldClose(_glfw)) {
-            glfwPollEvents();
-        }
-    }
-
-    void InitVulkanCore() {
-        InitInstance();
-        InitWindowSurface();
-        InitPhysicalDevice();
-        InitDevice();
-        InitSwapchain();
-    }
-
-    void DestroyVulkanCore() {
+    ~KanVul() {
         for (const auto iter : _swpchain_imgv) {
             vkDestroyImageView(_dev, iter, nullptr);
         }
@@ -53,24 +15,35 @@ public:
         vkDestroyDevice(_dev, nullptr);
         vkDestroySurfaceKHR(_inst, _surf, nullptr);
         vkDestroyInstance(_inst, nullptr);
+
+        glfwDestroyWindow(_glfw);
+        glfwTerminate();
+    }
+
+    KanVul() {
+        glfwInit();
+        glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+        glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+        glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
+        _glfw = glfwCreateWindow(800, 800, "KanVul_present", nullptr, nullptr);
+
+        InitInstance();
+        glfwCreateWindowSurface(_inst, _glfw, nullptr, &_surf);
+        InitPhysicalDevice();
+        InitDevice();
+        InitSwapchain();
     }
 
     void InitInstance() {
         VkApplicationInfo ai {};
         ai.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-        ai.pNext = nullptr;
         ai.pApplicationName = "KanVul_present";
-        ai.applicationVersion = 0;
         ai.pEngineName = "KanVul_present";
-        ai.engineVersion = 0;
         ai.apiVersion = VK_API_VERSION_1_1;
 
         VkInstanceCreateInfo ii {};
         ii.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-        ii.pNext = nullptr;
         ii.pApplicationInfo = &ai;
-        ii.enabledLayerCount = 0;
-        ii.ppEnabledLayerNames = nullptr;
 
         vector<const char *> ie;
         ie.push_back("VK_KHR_surface");
@@ -97,21 +70,15 @@ public:
     void InitDevice() {
         VkDeviceQueueCreateInfo qi {};
         qi.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-        qi.pNext = nullptr;
-        qi.flags = 0;
         qi.queueFamilyIndex = 0;
         qi.queueCount = 1;
         float priority = 1.0;
         qi.pQueuePriorities = &priority;
 
-        VkDeviceCreateInfo di;
+        VkDeviceCreateInfo di {};
         di.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-        di.pNext = nullptr;
-        di.flags = 0;
         di.queueCreateInfoCount = 1;
         di.pQueueCreateInfos = &qi;
-        di.enabledLayerCount = 0;
-        di.ppEnabledLayerNames = nullptr;
 
         vector<const char *> de;
         de.push_back("VK_KHR_swapchain");
@@ -135,7 +102,7 @@ public:
         VkSurfaceCapabilitiesKHR cap;
         vkGetPhysicalDeviceSurfaceCapabilitiesKHR(_pdev[0], _surf, &cap);
 
-        VkSwapchainCreateInfoKHR sci;
+        VkSwapchainCreateInfoKHR sci {};
         sci.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
         sci.pNext = nullptr;
         sci.flags = 0;
@@ -164,7 +131,7 @@ public:
         vkGetSwapchainImagesKHR(_dev, _swpchain, &scimgc, _swpchain_img.data());
 
         for (uint32_t i = 0; i < scimgc; i++) {
-            VkImageViewCreateInfo imgvi;
+            VkImageViewCreateInfo imgvi {};
             imgvi.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
             imgvi.pNext = nullptr;
             imgvi.flags = 0;
@@ -187,7 +154,6 @@ public:
 
 private:
     GLFWwindow *_glfw;
-    /* vulkan core */
     VkInstance _inst;
     VkSurfaceKHR _surf;
     vector<VkPhysicalDevice> _pdev;
@@ -200,10 +166,6 @@ private:
 int main(int argc, char const *argv[])
 {
     KanVul app;
-    app.InitWindow();
-    app.InitVulkanCore();
-    app.DestroyVulkanCore();
-    app.DestroyWindow();
 
     return 0;
 }

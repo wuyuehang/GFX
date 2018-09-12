@@ -1,25 +1,19 @@
 #include <vulkan/vulkan.h>
-#include <GLFW/glfw3.h>
-#include <iostream>
 #include <vector>
 
 using std::vector;
-using std::cout;
 
 class KanVul {
 public:
-    ~KanVul() {}
-    KanVul() {}
+    ~KanVul() {
+        vkDestroyDevice(_dev, nullptr);
+        vkDestroyInstance(_inst, nullptr);
+    }
 
-    void InitVulkanCore() {
+    KanVul() {
         InitInstance();
         InitPhysicalDevice();
         InitDevice();
-    }
-
-    void DestroyVulkanCore() {
-        vkDestroyDevice(_dev, nullptr);
-        vkDestroyInstance(_inst, nullptr);
     }
 
     void InitInstance() {
@@ -92,8 +86,6 @@ private:
 int main(int argc, char const *argv[])
 {
     KanVul app;
-    app.InitVulkanCore();
-    app.DestroyVulkanCore();
 
     return 0;
 }

@@ -1,5 +1,4 @@
 #include <vulkan/vulkan.h>
-#include <GLFW/glfw3.h>
 #include <iostream>
 #include <vector>
 
@@ -8,10 +7,14 @@ using std::vector;
 
 class KanVul {
 public:
-    ~KanVul() {}
-    KanVul() {}
+    ~KanVul() {
+        vkFreeCommandBuffers(_dev, _cmdpool, 1, &_transfer_cmdbuf);
+        vkDestroyCommandPool(_dev, _cmdpool, nullptr);
+        vkDestroyDevice(_dev, nullptr);
+        vkDestroyInstance(_inst, nullptr);
+    }
 
-    void InitVulkanCore() {
+    KanVul() {
         InitInstance();
         InitPhysicalDevice();
         InitDevice();
@@ -19,31 +22,16 @@ public:
         InitCmdBuffers();
     }
 
-    void DestroyVulkanCore() {
-        vkFreeCommandBuffers(_dev, _cmdpool, 1, &_transfer_cmdbuf);
-        vkDestroyCommandPool(_dev, _cmdpool, nullptr);
-        vkDestroyDevice(_dev, nullptr);
-        vkDestroyInstance(_inst, nullptr);
-    }
-
     void InitInstance() {
         VkApplicationInfo ai {};
         ai.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-        ai.pNext = nullptr;
         ai.pApplicationName = "KanVul_fillbuffer";
-        ai.applicationVersion = 0;
         ai.pEngineName = "KanVul_fillbuffer";
-        ai.engineVersion = 0;
         ai.apiVersion = VK_API_VERSION_1_1;
 
         VkInstanceCreateInfo ii {};
         ii.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-        ii.pNext = nullptr;
         ii.pApplicationInfo = &ai;
-        ii.enabledLayerCount = 0;
-        ii.ppEnabledLayerNames = nullptr;
-        ii.enabledExtensionCount = 0;
-        ii.ppEnabledExtensionNames = nullptr;
 
         vkCreateInstance(&ii, nullptr, &_inst);
     }
@@ -64,29 +52,20 @@ public:
     void InitDevice() {
         VkDeviceQueueCreateInfo qi {};
         qi.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-        qi.pNext = nullptr;
-        qi.flags = 0;
         qi.queueFamilyIndex = 0;
         qi.queueCount = 1;
         float priority = 1.0;
         qi.pQueuePriorities = &priority;
 
-        VkDeviceCreateInfo di;
+        VkDeviceCreateInfo di {};
         di.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-        di.pNext = nullptr;
-        di.flags = 0;
         di.queueCreateInfoCount = 1;
         di.pQueueCreateInfos = &qi;
-        di.enabledLayerCount = 0;
-        di.ppEnabledLayerNames = nullptr;
-        di.enabledExtensionCount = 0;
-        di.ppEnabledExtensionNames = nullptr;
-        di.pEnabledFeatures = nullptr;
 
         vkCreateDevice(_pdev[0], &di, nullptr, &_dev);
     }
 
-    void InitCmdPool(void) {
+    void InitCmdPool() {
         vkGetDeviceQueue(_dev, 0, 0, &_queue);
 
         VkCommandPoolCreateInfo ci {};
@@ -98,7 +77,7 @@ public:
         vkCreateCommandPool(_dev, &ci, nullptr, &_cmdpool);
     }
 
-    void InitCmdBuffers(void) {
+    void InitCmdBuffers() {
         /* transfer command buffer */
         VkCommandBufferAllocateInfo xfcmdi {};
         xfcmdi.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -110,7 +89,7 @@ public:
         vkAllocateCommandBuffers(_dev, &xfcmdi, &_transfer_cmdbuf);
     }
 
-    void Run(void) {
+    void Run() {
         /* set up buffer for fill */
         VkBuffer dst_buf;
         VkBufferCreateInfo bi {};
@@ -200,9 +179,7 @@ public:
 int main(int argc, char const *argv[])
 {
     KanVul app;
-    app.InitVulkanCore();
     app.Run();
-    app.DestroyVulkanCore();
 
     return 0;
 }
