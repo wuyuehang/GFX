@@ -13,7 +13,8 @@ binary = kanvul_init \
 	kanvul_present \
 	kanvul_clearcolorimage \
 	kanvul_copybuffertoimage \
-	kanvul_compute
+	kanvul_compute \
+	kanvul_draw
 
 all: $(binary)
 
@@ -41,8 +42,13 @@ kanvul_copybuffertoimage : kanvul_copybuffertoimage.cpp
 kanvul_compute : kanvul_compute.cpp
 	g++ $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
 
+kanvul_draw : kanvul_draw.cpp
+	g++ $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
+
 spv :
 	$(VK_SDK_PATH)/bin/glslangValidator -V kanvul_compute.comp.glsl -o kanvul_compute.spv
+	$(VK_SDK_PATH)/bin/glslangValidator -V kanvul_draw.vert.glsl -o kanvul_draw.vert.spv
+	$(VK_SDK_PATH)/bin/glslangValidator -V kanvul_draw.frag.glsl -o kanvul_draw.frag.spv
 
 clean:
 	rm -rf $(binary)
