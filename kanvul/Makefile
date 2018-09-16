@@ -14,7 +14,8 @@ binary = kanvul_init \
 	kanvul_clearcolorimage \
 	kanvul_copybuffertoimage \
 	kanvul_compute \
-	kanvul_draw
+	kanvul_draw \
+	kanvul_gfx_template
 
 all: $(binary)
 
@@ -43,6 +44,9 @@ kanvul_compute : kanvul_compute.cpp
 	g++ $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
 
 kanvul_draw : kanvul_draw.cpp
+	g++ $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
+
+kanvul_gfx_template : kanvul_gfx_template.cpp
 	g++ $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
 
 spv :
