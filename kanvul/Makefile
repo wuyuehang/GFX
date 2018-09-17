@@ -15,7 +15,8 @@ binary = kanvul_init \
 	kanvul_copybuffertoimage \
 	kanvul_compute \
 	kanvul_draw \
-	kanvul_gfx_template
+	kanvul_gfx_template \
+	kanvul_vertexbuffer_00
 
 all: $(binary)
 
@@ -49,10 +50,15 @@ kanvul_draw : kanvul_draw.cpp
 kanvul_gfx_template : kanvul_gfx_template.cpp
 	g++ $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
 
+kanvul_vertexbuffer_00 : kanvul_vertexbuffer_00.cpp
+	g++ $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
+
 spv :
 	$(VK_SDK_PATH)/bin/glslangValidator -V kanvul_compute.comp.glsl -o kanvul_compute.spv
 	$(VK_SDK_PATH)/bin/glslangValidator -V kanvul_draw.vert.glsl -o kanvul_draw.vert.spv
 	$(VK_SDK_PATH)/bin/glslangValidator -V kanvul_draw.frag.glsl -o kanvul_draw.frag.spv
+	$(VK_SDK_PATH)/bin/glslangValidator -V single_attribute.vert.glsl -o single_attribute.vert.spv
+	$(VK_SDK_PATH)/bin/glslangValidator -V constant.frag.glsl -o constant.frag.spv
 
 clean:
 	rm -rf $(binary)
