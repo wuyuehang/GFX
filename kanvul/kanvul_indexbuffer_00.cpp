@@ -14,6 +14,11 @@ public:
     ~KanVul() {
         vkQueueWaitIdle(_queue);
 
+        vkFreeMemory(_dev, _indexBufMem, nullptr);
+        vkFreeMemory(_dev, _vertexBufMem, nullptr);
+        vkDestroyBuffer(_dev, _indexBuf, nullptr);
+        vkDestroyBuffer(_dev, _vertexBuf, nullptr);
+
         for (const auto iter : _fb) {
             vkDestroyFramebuffer(_dev, iter, nullptr);
         }
@@ -51,6 +56,7 @@ public:
         InitSwapchain();
         InitCmdPool();
         InitCmdBuffers();
+        InitVertexAndIndex();
         InitSyncObj();
         InitRenderPass();
         InitFixedFuncGFXPipeline();
@@ -75,6 +81,7 @@ public:
             if (isRequiredMemoryType && hasRequiredProperties)
                 return static_cast<int32_t>(memoryIndex);
         }
+        assert(0);
         return -1;
     }
 
@@ -110,7 +117,10 @@ public:
             rpBeginInfo.pClearValues = &cv;
             vkCmdBeginRenderPass(_cmdbuf[i], &rpBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
             vkCmdBindPipeline(_cmdbuf[i], VK_PIPELINE_BIND_POINT_GRAPHICS, _gfxPipeline);
-            vkCmdDraw(_cmdbuf[i], 3, 1, 0, 0);
+            VkDeviceSize vertexbufferoffset = 0;
+            vkCmdBindVertexBuffers(_cmdbuf[i], 0, 1, &_vertexBuf, &vertexbufferoffset);
+            vkCmdBindIndexBuffer(_cmdbuf[i], _indexBuf, 0, VK_INDEX_TYPE_UINT16);
+            vkCmdDrawIndexed(_cmdbuf[i], 4, 1, 0, 0, 0);
             vkCmdEndRenderPass(_cmdbuf[i]);
 
             vkEndCommandBuffer(_cmdbuf[i]);
@@ -370,7 +380,7 @@ public:
     void InitGFXPipeline() {
         /* graphics pipeline -- shader */
         VkShaderModule vertShaderModule = VK_NULL_HANDLE;
-        auto vert = loadSPIRV("kanvul_draw.vert.spv");
+        auto vert = loadSPIRV("single_attribute.vert.spv");
         VkShaderModuleCreateInfo vertShaderModuleInfo {};
         vertShaderModuleInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
         vertShaderModuleInfo.codeSize = vert.size();
@@ -384,7 +394,7 @@ public:
         vertShaderStageInfo.pName = "main";
 
         VkShaderModule fragShaderModule = VK_NULL_HANDLE;
-        auto frag = loadSPIRV("kanvul_draw.frag.spv");
+        auto frag = loadSPIRV("constant.frag.spv");
         VkShaderModuleCreateInfo fragShaderModuleInfo {};
         fragShaderModuleInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
         fragShaderModuleInfo.codeSize = frag.size();
@@ -400,12 +410,27 @@ public:
         VkPipelineShaderStageCreateInfo shaderStageInfos[2] = { vertShaderStageInfo, fragShaderStageInfo };
 
         /* graphics pipeline -- state */
+        VkVertexInputBindingDescription bdInfo {};
+        bdInfo.binding = 0;
+        bdInfo.stride = 4*sizeof(float);
+        bdInfo.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+        VkVertexInputAttributeDescription adInfo {};
+        adInfo.location = 0;
+        adInfo.binding = 0;
+        adInfo.format = VK_FORMAT_R32G32B32A32_SFLOAT;
+        adInfo.offset = 0;
+
         VkPipelineVertexInputStateCreateInfo vertInputInfo {};
         vertInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+        vertInputInfo.vertexBindingDescriptionCount = 1;
+        vertInputInfo.pVertexBindingDescriptions = &bdInfo;
+        vertInputInfo.vertexAttributeDescriptionCount = 1;
+        vertInputInfo.pVertexAttributeDescriptions = &adInfo;
 
         VkPipelineInputAssemblyStateCreateInfo iaInfo {};
         iaInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-        iaInfo.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+        iaInfo.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
         iaInfo.primitiveRestartEnable = VK_FALSE;
 
         VkPipelineLayoutCreateInfo layoutInfo {};
@@ -460,6 +485,68 @@ public:
         }
     }
 
+    void InitVertexAndIndex() {
+
+        const float position[] = {
+            -0.5, -0.5, 0.0, 1.0,
+            0.5, -0.5, 0.0, 1.0,
+            -0.5, 0.5, 0.0, 1.0,
+            0.5, 0.5, 0.0, 1.0
+        };
+
+        VkBufferCreateInfo vbInfo {};
+        vbInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+        vbInfo.size = sizeof(position);
+        vbInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+        vbInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+        vkCreateBuffer(_dev, &vbInfo, nullptr, &_vertexBuf);
+
+        VkMemoryRequirements req {};
+        vkGetBufferMemoryRequirements(_dev, _vertexBuf, &req);
+
+        VkMemoryAllocateInfo allocInfo {};
+        allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+        allocInfo.allocationSize = req.size;
+        allocInfo.memoryTypeIndex = findProperties(&_pdmp, req.memoryTypeBits, req.memoryTypeBits);
+        vkAllocateMemory(_dev, &allocInfo, nullptr, &_vertexBufMem);
+
+        uint8_t *pDST = nullptr;
+        uint8_t *pSRC = (uint8_t *)(const void *)position;
+        vkMapMemory(_dev, _vertexBufMem, 0, req.size, 0, (void **)&pDST);
+        for (int i = 0; i < req.size; i++) {
+            *(pDST + i) = *(pSRC + i);
+        }
+        vkUnmapMemory(_dev, _vertexBufMem);
+
+        vkBindBufferMemory(_dev, _vertexBuf, _vertexBufMem, 0);
+
+        const uint16_t index[] = { 0, 1, 2, 3 };
+        VkBufferCreateInfo ibInfo {};
+        ibInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+        ibInfo.size = sizeof(index);
+        ibInfo.usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+        ibInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+        vkCreateBuffer(_dev, &ibInfo, nullptr, &_indexBuf);
+
+        req = {};
+        vkGetBufferMemoryRequirements(_dev, _indexBuf, &req);
+
+        allocInfo = {};
+        allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+        allocInfo.allocationSize = req.size;
+        allocInfo.memoryTypeIndex = findProperties(&_pdmp, req.memoryTypeBits, req.memoryTypeBits);
+        vkAllocateMemory(_dev, &allocInfo, nullptr, &_indexBufMem);
+
+        pDST = nullptr;
+        pSRC = (uint8_t *)index;
+        vkMapMemory(_dev, _indexBufMem, 0, req.size, 0, (void **)&pDST);
+        for (int i = 0; i < req.size; i++) {
+            *(pDST + i) = *(pSRC + i);
+        }
+        vkUnmapMemory(_dev, _indexBufMem);
+        vkBindBufferMemory(_dev, _indexBuf, _indexBufMem, 0);
+    }
+
 private:
     GLFWwindow *_glfw;
     VkInstance _inst;
@@ -488,6 +575,11 @@ private:
     VkPipelineMultisampleStateCreateInfo __msaaInfo {};
     VkPipelineColorBlendStateCreateInfo __bldInfo {};
     VkPipelineColorBlendAttachmentState __colorBldAttaState {};
+    /* resource */
+    VkBuffer _vertexBuf;
+    VkBuffer _indexBuf;
+    VkDeviceMemory _vertexBufMem;
+    VkDeviceMemory _indexBufMem;
 };
 
 int main(int argc, char const *argv[])

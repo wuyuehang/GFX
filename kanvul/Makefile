@@ -16,7 +16,8 @@ binary = kanvul_init \
 	kanvul_compute \
 	kanvul_draw \
 	kanvul_gfx_template \
-	kanvul_vertexbuffer_00
+	kanvul_vertexbuffer_00 \
+	kanvul_indexbuffer_00
 
 all: $(binary)
 
@@ -51,6 +52,9 @@ kanvul_gfx_template : kanvul_gfx_template.cpp
 	g++ $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
 
 kanvul_vertexbuffer_00 : kanvul_vertexbuffer_00.cpp
+	g++ $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
+
+kanvul_indexbuffer_00 : kanvul_indexbuffer_00.cpp
 	g++ $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
 
 spv :
