@@ -20,7 +20,8 @@ binary = kanvul_init \
 	kanvul_indexbuffer_00 \
 	kanvul_vertexbuffer_01 \
 	kanvul_vertexbuffer_02 \
-	kanvul_vertexbuffer_03
+	kanvul_vertexbuffer_03 \
+	kanvul_uniformbuffer_00
 
 all: $(binary)
 
@@ -69,6 +70,9 @@ kanvul_vertexbuffer_02 : kanvul_vertexbuffer_02.cpp
 kanvul_vertexbuffer_03 : kanvul_vertexbuffer_03.cpp
 	g++ $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
 
+kanvul_uniformbuffer_00 : kanvul_uniformbuffer_00.cpp
+	g++ $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
+
 spv :
 	$(VK_SDK_PATH)/bin/glslangValidator -V kanvul_compute.comp.glsl -o kanvul_compute.spv
 	$(VK_SDK_PATH)/bin/glslangValidator -V kanvul_draw.vert.glsl -o kanvul_draw.vert.spv
@@ -77,6 +81,7 @@ spv :
 	$(VK_SDK_PATH)/bin/glslangValidator -V constant.frag.glsl -o constant.frag.spv
 	$(VK_SDK_PATH)/bin/glslangValidator -V dual_attribute.vert.glsl -o dual_attribute.vert.spv
 	$(VK_SDK_PATH)/bin/glslangValidator -V varying_color.frag.glsl -o varying_color.frag.spv
+	$(VK_SDK_PATH)/bin/glslangValidator -V uniform.frag.glsl -o uniform.frag.spv
 
 clean:
 	rm -rf $(binary)
