@@ -4,6 +4,7 @@
 #include <cassert>
 #include <fstream>
 #include <string>
+#include "resource_mgnt.hpp"
 
 using std::string;
 using std::ifstream;
@@ -13,6 +14,12 @@ class KanVul {
 public:
     ~KanVul() {
         vkQueueWaitIdle(_queue);
+
+        _resource_manager.freeBuf(_dev);
+
+        vkFreeDescriptorSets(_dev, _descPool, 1, &_descSet);
+        vkDestroyDescriptorPool(_dev, _descPool, nullptr);
+        vkDestroyDescriptorSetLayout(_dev, _descSetLayout, nullptr);
 
         for (const auto iter : _fb) {
             vkDestroyFramebuffer(_dev, iter, nullptr);
@@ -42,7 +49,7 @@ public:
         glfwInit();
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
         glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
-        _glfw = glfwCreateWindow(800, 800, "KanVul_gfx_template", nullptr, nullptr);
+        _glfw = glfwCreateWindow(800, 800, __FILE__, nullptr, nullptr);
 
         InitInstance();
         glfwCreateWindowSurface(_inst, _glfw, nullptr, &_surf);
@@ -51,31 +58,12 @@ public:
         InitSwapchain();
         InitCmdPool();
         InitCmdBuffers();
+        InitBuffers();
         InitSyncObj();
         InitRenderPass();
         InitFixedFuncGFXPipeline();
         InitGFXPipeline();
         InitFramebuffers();
-    }
-
-    /* Find a memory in `memoryTypeBitsRequirement` that includes all of `requiredProperties`
-     * this function is copied from vulkan spec */
-    int32_t findProperties(const VkPhysicalDeviceMemoryProperties* pMemoryProperties,
-        uint32_t memoryTypeBitsRequirement,
-        VkMemoryPropertyFlags requiredProperties) {
-        const uint32_t memoryCount = pMemoryProperties->memoryTypeCount;
-
-        for (uint32_t memoryIndex = 0; memoryIndex < memoryCount; ++memoryIndex) {
-            const uint32_t memoryTypeBits = (1 << memoryIndex);
-            const bool isRequiredMemoryType = memoryTypeBitsRequirement & memoryTypeBits;
-
-            const VkMemoryPropertyFlags properties = pMemoryProperties->memoryTypes[memoryIndex].propertyFlags;
-            const bool hasRequiredProperties = (properties & requiredProperties) == requiredProperties;
-
-            if (isRequiredMemoryType && hasRequiredProperties)
-                return static_cast<int32_t>(memoryIndex);
-        }
-        return -1;
     }
 
     vector<char> loadSPIRV(const string& filename) {
@@ -106,10 +94,14 @@ public:
             rpBeginInfo.renderArea.extent = _surfcapkhr.currentExtent;
             rpBeginInfo.clearValueCount = 1;
             VkClearValue cv {};
-            cv.color = {0.25, 0.0, 0.0, 1.0};
+            cv.color = {0.05, 0.0, 0.0, 1.0};
             rpBeginInfo.pClearValues = &cv;
             vkCmdBeginRenderPass(_cmdbuf[i], &rpBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
             vkCmdBindPipeline(_cmdbuf[i], VK_PIPELINE_BIND_POINT_GRAPHICS, _gfxPipeline);
+            vkCmdBindDescriptorSets(_cmdbuf[i], VK_PIPELINE_BIND_POINT_GRAPHICS, _layout, 0, 1, &_descSet, 0, nullptr);
+            VkDeviceSize offset = {};
+            VkBuffer _vertexBuf = _resource_manager.queryBuf("vertexbuffer");
+            vkCmdBindVertexBuffers(_cmdbuf[i], 0, 1, &_vertexBuf, &offset);
             vkCmdDraw(_cmdbuf[i], 3, 1, 0, 0);
             vkCmdEndRenderPass(_cmdbuf[i]);
 
@@ -273,6 +265,24 @@ public:
         vkAllocateCommandBuffers(_dev, &cmdBufInfo, _cmdbuf.data());
     }
 
+    void InitBuffers() {
+        GLfloat position[] = {
+            -1.0, -1.0,
+            0.0, 1.0,
+            1.0, -1.0
+        };
+
+        _resource_manager.allocBuf(_dev, _pdmp, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+                sizeof(position), position, "vertexbuffer");
+
+        GLfloat OC[] = {
+            1.0, 1.0, 1.0, 1.0
+        };
+
+        _resource_manager.allocBuf(_dev, _pdmp, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                sizeof(OC), OC, "uniformbuffer");
+    }
+
     void InitSyncObj() {
         VkSemaphoreCreateInfo swpImgAcquireSemaInfo {};
         swpImgAcquireSemaInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
@@ -370,7 +380,7 @@ public:
     void InitGFXPipeline() {
         /* graphics pipeline -- shader */
         VkShaderModule vertShaderModule = VK_NULL_HANDLE;
-        auto vert = loadSPIRV("kanvul_draw.vert.spv");
+        auto vert = loadSPIRV("single_attribute.vert.spv");
         VkShaderModuleCreateInfo vertShaderModuleInfo {};
         vertShaderModuleInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
         vertShaderModuleInfo.codeSize = vert.size();
@@ -384,7 +394,7 @@ public:
         vertShaderStageInfo.pName = "main";
 
         VkShaderModule fragShaderModule = VK_NULL_HANDLE;
-        auto frag = loadSPIRV("kanvul_draw.frag.spv");
+        auto frag = loadSPIRV("uniform.frag.spv");
         VkShaderModuleCreateInfo fragShaderModuleInfo {};
         fragShaderModuleInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
         fragShaderModuleInfo.codeSize = frag.size();
@@ -400,8 +410,23 @@ public:
         VkPipelineShaderStageCreateInfo shaderStageInfos[2] = { vertShaderStageInfo, fragShaderStageInfo };
 
         /* graphics pipeline -- state */
+        VkVertexInputBindingDescription vbd {};
+        vbd.binding = 0;
+        vbd.stride = 2*sizeof(float);
+        vbd.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+        VkVertexInputAttributeDescription ad {};
+        ad.location = 0;
+        ad.binding = 0;
+        ad.format = VK_FORMAT_R32G32_SFLOAT;
+        ad.offset = 0;
+
         VkPipelineVertexInputStateCreateInfo vertInputInfo {};
         vertInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+        vertInputInfo.vertexBindingDescriptionCount = 1;
+        vertInputInfo.pVertexBindingDescriptions = &vbd;
+        vertInputInfo.vertexAttributeDescriptionCount = 1;
+        vertInputInfo.pVertexAttributeDescriptions = &ad;
 
         VkPipelineInputAssemblyStateCreateInfo iaInfo {};
         iaInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
@@ -412,8 +437,59 @@ public:
         layoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
         layoutInfo.pNext = nullptr;
         layoutInfo.pNext = 0;
-        layoutInfo.setLayoutCount = 0;
-        layoutInfo.pSetLayouts = nullptr;
+
+        VkDescriptorSetLayoutBinding UNIbinding {};
+        UNIbinding.binding = 0;
+        UNIbinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        UNIbinding.descriptorCount = 1;
+        UNIbinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+        UNIbinding.pImmutableSamplers = nullptr;
+
+        VkDescriptorSetLayoutCreateInfo dsLayoutInfo {};
+        dsLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+        dsLayoutInfo.bindingCount = 1;
+        dsLayoutInfo.pBindings = &UNIbinding;
+        vkCreateDescriptorSetLayout(_dev, &dsLayoutInfo, nullptr, &_descSetLayout);
+
+        VkDescriptorPoolSize poolSize {};
+        poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        poolSize.descriptorCount = 1;
+        VkDescriptorPoolCreateInfo dsPoolInfo {};
+        dsPoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+        dsPoolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+        dsPoolInfo.maxSets = 1;
+        dsPoolInfo.poolSizeCount =1;
+        dsPoolInfo.pPoolSizes = &poolSize;
+        vkCreateDescriptorPool(_dev, &dsPoolInfo, nullptr, &_descPool);
+
+        VkDescriptorSetAllocateInfo dsAllocInfo {};
+        dsAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+        dsAllocInfo.descriptorPool = _descPool;
+        dsAllocInfo.descriptorSetCount = 1;
+        dsAllocInfo.pSetLayouts = &_descSetLayout;
+        vkAllocateDescriptorSets(_dev, &dsAllocInfo, &_descSet);
+
+        /* Update DescriptorSets */
+        VkDescriptorBufferInfo descBufferInfo {};
+        descBufferInfo.buffer = _resource_manager.queryBuf("uniformbuffer");
+        descBufferInfo.offset = 0;
+        descBufferInfo.range = 16;
+
+        VkWriteDescriptorSet wds {};
+        wds.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        wds.pNext = nullptr;
+        wds.dstSet = _descSet;
+        wds.dstBinding = 0;
+        wds.dstArrayElement = 0;
+        wds.descriptorCount = 1;
+        wds.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        wds.pImageInfo = nullptr;
+        wds.pBufferInfo = &descBufferInfo;
+        wds.pTexelBufferView = nullptr;
+        vkUpdateDescriptorSets(_dev, 1, &wds, 0, nullptr);
+
+        layoutInfo.setLayoutCount = 1;
+        layoutInfo.pSetLayouts = &_descSetLayout;
         layoutInfo.pushConstantRangeCount = 0;
         layoutInfo.pPushConstantRanges = nullptr;
         vkCreatePipelineLayout(_dev, &layoutInfo, nullptr, &_layout);
@@ -488,6 +564,12 @@ private:
     VkPipelineMultisampleStateCreateInfo __msaaInfo {};
     VkPipelineColorBlendStateCreateInfo __bldInfo {};
     VkPipelineColorBlendAttachmentState __colorBldAttaState {};
+    /* resource */
+    ResouceMgnt _resource_manager;
+    /* descriptor */
+    VkDescriptorPool _descPool;
+    VkDescriptorSetLayout _descSetLayout;
+    VkDescriptorSet _descSet;
 };
 
 int main(int argc, char const *argv[])

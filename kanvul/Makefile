@@ -6,71 +6,71 @@ LDFLAGS = -L$(VK_SDK_PATH)/lib -lvulkan `pkg-config --libs glfw3`
 
 .PHONY: clean run all
 
-binary = kanvul_init \
-	kanvul_copybuffer \
-	kanvul_fillbuffer \
-	kanvul_updatebuffer \
-	kanvul_present \
-	kanvul_clearcolorimage \
-	kanvul_copybuffertoimage \
-	kanvul_compute \
-	kanvul_draw \
-	kanvul_gfx_template \
-	kanvul_vertexbuffer_00 \
-	kanvul_indexbuffer_00 \
-	kanvul_vertexbuffer_01 \
-	kanvul_vertexbuffer_02 \
-	kanvul_vertexbuffer_03 \
-	kanvul_uniformbuffer_00
+binary = kv_init \
+	kv_copybuffer \
+	kv_fillbuffer \
+	kv_updatebuffer \
+	kv_present \
+	kv_clearcolorimage \
+	kv_copybuffertoimage \
+	kv_compute \
+	kv_draw \
+	kv_vertexbuffer_00 \
+	kv_indexbuffer_00 \
+	kv_vertexbuffer_01 \
+	kv_vertexbuffer_02 \
+	kv_vertexbuffer_03 \
+	kv_uniformbuffer_00 \
+	kv_uniformbuffer_01
 
 all: $(binary)
 
-kanvul_init : kanvul_init.cpp
+kv_init : kanvul_init.cpp
 	g++ $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
 
-kanvul_copybuffer : kanvul_copybuffer.cpp
+kv_copybuffer : kanvul_copybuffer.cpp
 	g++ $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
 
-kanvul_fillbuffer : kanvul_fillbuffer.cpp
+kv_fillbuffer : kanvul_fillbuffer.cpp
 	g++ $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
 
-kanvul_updatebuffer : kanvul_updatebuffer.cpp
+kv_updatebuffer : kanvul_updatebuffer.cpp
 	g++ $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
 
-kanvul_present : kanvul_present.cpp
+kv_present : kanvul_present.cpp
 	g++ $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
 
-kanvul_clearcolorimage : kanvul_clearcolorimage.cpp
+kv_clearcolorimage : kanvul_clearcolorimage.cpp
 	g++ $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
 
-kanvul_copybuffertoimage : kanvul_copybuffertoimage.cpp
+kv_copybuffertoimage : kanvul_copybuffertoimage.cpp
 	g++ $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
 
-kanvul_compute : kanvul_compute.cpp
+kv_compute : kanvul_compute.cpp
 	g++ $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
 
-kanvul_draw : kanvul_draw.cpp
+kv_draw : kanvul_draw.cpp
 	g++ $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
 
-kanvul_gfx_template : kanvul_gfx_template.cpp
+kv_vertexbuffer_00 : kanvul_vertexbuffer_00.cpp
 	g++ $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
 
-kanvul_vertexbuffer_00 : kanvul_vertexbuffer_00.cpp
+kv_indexbuffer_00 : kanvul_indexbuffer_00.cpp
 	g++ $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
 
-kanvul_indexbuffer_00 : kanvul_indexbuffer_00.cpp
+kv_vertexbuffer_01 : kanvul_vertexbuffer_01.cpp
 	g++ $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
 
-kanvul_vertexbuffer_01 : kanvul_vertexbuffer_01.cpp
+kv_vertexbuffer_02 : kanvul_vertexbuffer_02.cpp
 	g++ $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
 
-kanvul_vertexbuffer_02 : kanvul_vertexbuffer_02.cpp
+kv_vertexbuffer_03 : kanvul_vertexbuffer_03.cpp
 	g++ $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
 
-kanvul_vertexbuffer_03 : kanvul_vertexbuffer_03.cpp
+kv_uniformbuffer_00 : kanvul_uniformbuffer_00.cpp
 	g++ $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
 
-kanvul_uniformbuffer_00 : kanvul_uniformbuffer_00.cpp
+kv_uniformbuffer_01 : kanvul_uniformbuffer_01.cpp resource_mgnt.hpp
 	g++ $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
 
 spv :
