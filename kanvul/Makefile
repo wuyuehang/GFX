@@ -21,7 +21,8 @@ binary = kv_init \
 	kv_vertexbuffer_02 \
 	kv_vertexbuffer_03 \
 	kv_uniformbuffer_00 \
-	kv_uniformbuffer_01
+	kv_uniformbuffer_01 \
+	kv_depthbuffer
 
 all: $(binary)
 
@@ -71,6 +72,9 @@ kv_uniformbuffer_00 : kanvul_uniformbuffer_00.cpp
 	g++ $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
 
 kv_uniformbuffer_01 : kanvul_uniformbuffer_01.cpp resource_mgnt.hpp
+	g++ $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
+
+kv_depthbuffer : kanvul_depthbuffer.cpp resource_mgnt.hpp
 	g++ $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
 
 spv :
