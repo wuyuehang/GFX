@@ -22,7 +22,8 @@ binary = kv_init \
 	kv_vertexbuffer_03 \
 	kv_uniformbuffer_00 \
 	kv_uniformbuffer_01 \
-	kv_depthbuffer
+	kv_depthbuffer \
+	kv_texture2d_00
 
 all: $(binary)
 
@@ -77,6 +78,9 @@ kv_uniformbuffer_01 : kanvul_uniformbuffer_01.cpp resource_mgnt.hpp
 kv_depthbuffer : kanvul_depthbuffer.cpp resource_mgnt.hpp
 	g++ $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
 
+kv_texture2d_00 : kanvul_texture2d_00.cpp resource_mgnt.hpp
+	g++ $(CXXFLAGS) -o $@ $^ $(LDFLAGS) -lSOIL
+
 spv :
 	$(VK_SDK_PATH)/bin/glslangValidator -V kanvul_compute.comp.glsl -o kanvul_compute.spv
 	$(VK_SDK_PATH)/bin/glslangValidator -V kanvul_draw.vert.glsl -o kanvul_draw.vert.spv
@@ -86,6 +90,8 @@ spv :
 	$(VK_SDK_PATH)/bin/glslangValidator -V dual_attribute.vert.glsl -o dual_attribute.vert.spv
 	$(VK_SDK_PATH)/bin/glslangValidator -V varying_color.frag.glsl -o varying_color.frag.spv
 	$(VK_SDK_PATH)/bin/glslangValidator -V uniform.frag.glsl -o uniform.frag.spv
+	$(VK_SDK_PATH)/bin/glslangValidator -V triple_attribute.vert.glsl -o triple_attribute.vert.spv
+	$(VK_SDK_PATH)/bin/glslangValidator -V dual_attribute.frag.glsl -o dual_attribute.frag.spv
 
 clean:
 	rm -rf $(binary)
