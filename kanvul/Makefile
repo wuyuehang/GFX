@@ -1,8 +1,11 @@
 VK_SDK_PATH = /home/vk/1.1.82.1/x86_64
+GLFW3_PATH = /home/vk/glfw/build
 
-CXXFLAGS = -g -std=c++11 -I$(VK_SDK_PATH)/include
+#CXXFLAGS = -g -std=c++11 -I$(VK_SDK_PATH)/include
+CXXFLAGS = -g -std=c++11 -I$(VK_SDK_PATH)/include -I$(GLFW3_PATH)/include
 
-LDFLAGS = -L$(VK_SDK_PATH)/lib -lvulkan `pkg-config --libs glfw3`
+#LDFLAGS = -L$(VK_SDK_PATH)/lib -lvulkan `pkg-config --libs glfw3`
+LDFLAGS = -L$(VK_SDK_PATH)/lib -lvulkan -L$(GLFW3_PATH)/lib -lglfw
 
 .PHONY: clean run all
 
