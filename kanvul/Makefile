@@ -6,6 +6,7 @@ CXXFLAGS = -g -std=c++11 -I$(VK_SDK_PATH)/include -I$(GLFW3_PATH)/include
 
 #LDFLAGS = -L$(VK_SDK_PATH)/lib -lvulkan `pkg-config --libs glfw3`
 LDFLAGS = -L$(VK_SDK_PATH)/lib -lvulkan -L$(GLFW3_PATH)/lib -lglfw
+LDFLAGS_XCB = -L$(VK_SDK_PATH)/lib -lvulkan `pkg-config --libs xcb`
 
 .PHONY: clean run all
 
@@ -26,7 +27,8 @@ binary = kv_init \
 	kv_uniformbuffer_00 \
 	kv_uniformbuffer_01 \
 	kv_depthbuffer \
-	kv_texture2d_00
+	kv_texture2d_00 \
+	kv_xcb
 
 all: $(binary)
 
@@ -83,6 +85,9 @@ kv_depthbuffer : kanvul_depthbuffer.cpp resource_mgnt.hpp
 
 kv_texture2d_00 : kanvul_texture2d_00.cpp resource_mgnt.hpp
 	g++ $(CXXFLAGS) -o $@ $^ $(LDFLAGS) -lSOIL
+
+kv_xcb : kanvul_xcb.cpp
+	g++ $(CXXFLAGS) -o $@ $^ $(LDFLAGS_XCB)
 
 spv :
 	$(VK_SDK_PATH)/bin/glslangValidator -V kanvul_compute.comp.glsl -o kanvul_compute.spv
