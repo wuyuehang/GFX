@@ -28,7 +28,8 @@ binary = kv_init \
 	kv_uniformbuffer_01 \
 	kv_depthbuffer \
 	kv_texture2d_00 \
-	kv_xcb
+	kv_xcb \
+	kv_debugcallback
 
 all: $(binary)
 
@@ -88,6 +89,9 @@ kv_texture2d_00 : kanvul_texture2d_00.cpp resource_mgnt.hpp
 
 kv_xcb : kanvul_xcb.cpp
 	g++ $(CXXFLAGS) -o $@ $^ $(LDFLAGS_XCB)
+
+kv_debugcallback : kanvul_debugcallback.cpp
+	g++ $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
 
 spv :
 	$(VK_SDK_PATH)/bin/glslangValidator -V kanvul_compute.comp.glsl -o kanvul_compute.spv
