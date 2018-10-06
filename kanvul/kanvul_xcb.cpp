@@ -13,6 +13,7 @@ public:
         vkQueueWaitIdle(_queue);
 
         vkDestroySemaphore(_dev, _swpImgAcquire, nullptr);
+        vkDestroySemaphore(_dev, _renderImgFinished, nullptr);
         vkFreeCommandBuffers(_dev, _cmdpool, _cmdbuf.size(), _cmdbuf.data());
         vkDestroyCommandPool(_dev, _cmdpool, nullptr);
 
@@ -101,23 +102,29 @@ public:
 
             VkSubmitInfo si {};
             si.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-            si.pNext = nullptr;
+            /* stages prior to output color stage can already process while output color stage must
+             * wait until _swpImgAcquire semaphore is signaled.
+             */
             si.waitSemaphoreCount = 1;
             si.pWaitSemaphores = &_swpImgAcquire;
             VkPipelineStageFlags wm = VK_PIPELINE_STAGE_TRANSFER_BIT;
             si.pWaitDstStageMask = &wm;
             si.commandBufferCount = 1;
             si.pCommandBuffers = &_cmdbuf[ImageIndex];
-            si.signalSemaphoreCount = 0;
-            si.pSignalSemaphores = nullptr;
+            /* signal finish of render process, status from unsignaled to signaled */
+            si.signalSemaphoreCount = 1;
+            si.pSignalSemaphores = &_renderImgFinished;
 
             vkQueueSubmit(_queue, 1, &si, VK_NULL_HANDLE);
 
             VkPresentInfoKHR pi {};
             pi.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
             pi.pNext = nullptr;
-            pi.waitSemaphoreCount = 0;
-            pi.pWaitSemaphores = nullptr;
+            /* presentation engine can only start present image until the render executions onto the
+             * image have been finished (_renderImgFinished semaphore signaled)
+             */
+            pi.waitSemaphoreCount = 1;
+            pi.pWaitSemaphores = &_renderImgFinished;
             pi.swapchainCount = 1;
             pi.pSwapchains = &_swpchain;
             pi.pImageIndices = &ImageIndex;
@@ -339,10 +346,10 @@ public:
     }
 
     void InitSyncObj() {
-        VkSemaphoreCreateInfo swpImgAcquireSemaInfo {};
-        swpImgAcquireSemaInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-
-        vkCreateSemaphore(_dev, &swpImgAcquireSemaInfo, nullptr, &_swpImgAcquire);
+        VkSemaphoreCreateInfo semaInfo {};
+        semaInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+        vkCreateSemaphore(_dev, &semaInfo, nullptr, &_swpImgAcquire);
+        vkCreateSemaphore(_dev, &semaInfo, nullptr, &_renderImgFinished);
     }
 
 private:
@@ -360,7 +367,10 @@ private:
     VkCommandPool _cmdpool;
     vector<VkCommandBuffer> _cmdbuf;
     VkQueue _queue;
+    /* sync between presentation engine and start of command execution */
     VkSemaphore _swpImgAcquire;
+    /* sync between finish of command execution and present request to presentation engine */
+    VkSemaphore _renderImgFinished;
 };
 
 int main(int argc, char const *argv[])

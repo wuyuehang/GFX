@@ -28,6 +28,7 @@ public:
         vkDestroyRenderPass(_dev, _renderpass, nullptr);
 
         vkDestroySemaphore(_dev, _swpImgAcquire, nullptr);
+        vkDestroySemaphore(_dev, _renderImgFinished, nullptr);
         vkFreeCommandBuffers(_dev, _cmdpool, _cmdbuf.size(), _cmdbuf.data());
         vkDestroyCommandPool(_dev, _cmdpool, nullptr);
 
@@ -130,11 +131,14 @@ public:
         while (!glfwWindowShouldClose(_glfw)) {
             glfwPollEvents();
 
+            /* presentation engine will block forever until unused images are available */
             vkAcquireNextImageKHR(_dev, _swpchain, UINT64_MAX, _swpImgAcquire, VK_NULL_HANDLE, &ImageIndex);
 
             VkSubmitInfo si {};
             si.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-            si.pNext = nullptr;
+            /* stages prior to output color stage can already process while output color stage must
+             * wait until _swpImgAcquire semaphore is signaled.
+             */
             si.waitSemaphoreCount = 1;
             si.pWaitSemaphores = &_swpImgAcquire;
             VkPipelineStageFlags ws = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
@@ -142,16 +146,20 @@ public:
 
             si.commandBufferCount = 1;
             si.pCommandBuffers = &_cmdbuf[ImageIndex];
-            si.signalSemaphoreCount = 0;
-            si.pSignalSemaphores = nullptr;
+            /* signal finish of render process, status from unsignaled to signaled */
+            si.signalSemaphoreCount = 1;
+            si.pSignalSemaphores = &_renderImgFinished;
 
             vkQueueSubmit(_queue, 1, &si, VK_NULL_HANDLE);
 
             VkPresentInfoKHR pi {};
             pi.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
             pi.pNext = nullptr;
-            pi.waitSemaphoreCount = 0;
-            pi.pWaitSemaphores = nullptr;
+            /* presentation engine can only start present image until the render executions onto the
+             * image have been finished (_renderImgFinished semaphore signaled)
+             */
+            pi.waitSemaphoreCount = 1;
+            pi.pWaitSemaphores = &_renderImgFinished;
             pi.swapchainCount = 1;
             pi.pSwapchains = &_swpchain;
             pi.pImageIndices = &ImageIndex;
@@ -284,9 +292,10 @@ public:
     }
 
     void InitSyncObj() {
-        VkSemaphoreCreateInfo swpImgAcquireSemaInfo {};
-        swpImgAcquireSemaInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-        vkCreateSemaphore(_dev, &swpImgAcquireSemaInfo, nullptr, &_swpImgAcquire);
+        VkSemaphoreCreateInfo semaInfo {};
+        semaInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+        vkCreateSemaphore(_dev, &semaInfo, nullptr, &_swpImgAcquire);
+        vkCreateSemaphore(_dev, &semaInfo, nullptr, &_renderImgFinished);
     }
 
     void InitRenderPass() {
@@ -532,7 +541,7 @@ public:
         vkGetBufferMemoryRequirements(_dev, _indexBuf, &req);
 
         allocInfo = {};
-        allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+        allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
         allocInfo.allocationSize = req.size;
         allocInfo.memoryTypeIndex = findProperties(&_pdmp, req.memoryTypeBits, req.memoryTypeBits);
         vkAllocateMemory(_dev, &allocInfo, nullptr, &_indexBufMem);
@@ -562,7 +571,10 @@ private:
     VkCommandPool _cmdpool;
     vector<VkCommandBuffer> _cmdbuf;
     VkQueue _queue;
+    /* sync between presentation engine and start of command execution */
     VkSemaphore _swpImgAcquire;
+    /* sync between finish of command execution and present request to presentation engine */
+    VkSemaphore _renderImgFinished;
     VkRenderPass _renderpass;
     VkPipelineLayout _layout;
     VkPipeline _gfxPipeline;
