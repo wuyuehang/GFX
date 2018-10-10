@@ -1,11 +1,12 @@
 #include <SOIL/SOIL.h>
 #include "volcano.hpp"
 
-
 class App : public Volcano {
 public:
     ~App() {
         vkQueueWaitIdle(queue);
+
+        vkDestroyPipelineCache(device, pplcache, nullptr);
 
         vkFreeDescriptorSets(device, descPool, 1, &descSet);
         vkDestroyDescriptorPool(device, descPool, nullptr);
@@ -25,7 +26,9 @@ public:
         InitBuffers();
         BakeTexture2D();
         InitSampler();
+        _bakePipelineCache("logo_pipeline_cache.bin", pplcache);
         InitGFXPipeline();
+        //_diskPipelineCache("logo_pipeline_cache.bin", pplcache);
         BakeCommand();
     }
 
@@ -365,7 +368,7 @@ public:
         gfxPipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
         gfxPipelineInfo.basePipelineIndex = -1;
 
-        vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &gfxPipelineInfo, nullptr, &gfxPipeline);
+        vkCreateGraphicsPipelines(device, pplcache, 1, &gfxPipelineInfo, nullptr, &gfxPipeline);
         vkDestroyShaderModule(device, vertShaderModule, nullptr);
         vkDestroyShaderModule(device, fragShaderModule, nullptr);
     }
@@ -378,6 +381,7 @@ public:
     /* pipeline */
     VkPipelineLayout layout;
     VkPipeline gfxPipeline;
+    VkPipelineCache pplcache;
     /* descrpitor */
     VkDescriptorSetLayout descSetLayout;
     VkDescriptorPool descPool;

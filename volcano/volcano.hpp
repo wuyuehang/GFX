@@ -4,6 +4,7 @@
 #include <vulkan/vulkan.h>
 #include <GLFW/glfw3.h>
 #include <cassert>
+#include <cstring>
 #include <fstream>
 #include <iostream>
 #include <string>
@@ -135,6 +136,7 @@ public:
         vkGetPhysicalDeviceQueueFamilyProperties(phydev[0], &cnt, queueFamily.data());
 
         vkGetPhysicalDeviceMemoryProperties(phydev[0], &pdmp);
+        vkGetPhysicalDeviceProperties(phydev[0], &pdp);
     }
 
     virtual void _initDevice() final {
@@ -472,6 +474,58 @@ public:
         fixfunc_templ.bldInfo.pAttachments = &fixfunc_templ.colorBldAttaState;
     }
 
+    virtual void _bakePipelineCache(const string& filename, VkPipelineCache &pplcache) final {
+        ifstream f(filename, std::ios::ate | std::ios::binary);
+        size_t filesize = (size_t) f.tellg();
+        vector<char> buffer(filesize);
+        f.seekg(0);
+        f.read(buffer.data(), filesize);
+        f.close();
+
+        size_t cache_size = 0;
+        void *cache_datum = nullptr;
+
+        if (buffer.size()) {
+            uint32_t hdrlength = 0;
+            uint32_t ppchdrver = 0;
+            uint32_t vendorid = 0;
+            uint32_t deviceid = 0;
+            uint8_t uuid[VK_UUID_SIZE] = {};
+            memcpy(&hdrlength, buffer.data(), 4);
+            memcpy(&ppchdrver, buffer.data() + 4, 4);
+            memcpy(&vendorid, buffer.data() + 8, 4);
+            memcpy(&deviceid, buffer.data() + 12, 4);
+            memcpy(uuid, buffer.data() + 16, VK_UUID_SIZE);
+            VkBool32 invalidate = VK_FALSE;
+            if (hdrlength > 0 && ppchdrver == VK_PIPELINE_CACHE_HEADER_VERSION_ONE &&
+                vendorid == pdp.vendorID && deviceid == pdp.deviceID &&
+                memcmp(uuid, pdp.pipelineCacheUUID, VK_UUID_SIZE) == 0) {
+                cache_size = buffer.size();
+                cache_datum = buffer.data();
+            }
+        }
+
+        VkPipelineCacheCreateInfo info = {};
+        info.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO;
+        info.initialDataSize = cache_size;
+        info.pInitialData = cache_datum;
+
+        vkCreatePipelineCache(device, &info, nullptr, &pplcache);
+    }
+
+    virtual void _diskPipelineCache(const string &filename, VkPipelineCache &pplcache) final {
+        size_t cache_size = 0;
+        vector<char> cache_datum;
+
+        vkGetPipelineCacheData(device, pplcache, &cache_size, nullptr);
+        cache_datum.resize(cache_size);
+        vkGetPipelineCacheData(device, pplcache, &cache_size, cache_datum.data());
+
+        std::ofstream f(filename, std::ios::out);
+        f.write(cache_datum.data(), cache_size);
+        f.close();
+    }
+
     virtual void Run() final {
         glfwShowWindow(glfw);
         uint32_t ImageIndex = 0;
@@ -520,6 +574,7 @@ public:
     GLFWwindow *glfw;
     VkInstance instance;
     vector<VkPhysicalDevice> phydev;
+    VkPhysicalDeviceProperties pdp {};
     VkPhysicalDeviceMemoryProperties pdmp {};
     VkDevice device;
     /* for simplicity, one queue to support GFX, compute, transfer and presentation */
