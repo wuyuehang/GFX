@@ -58,6 +58,8 @@ struct PSOTemplate {
     VkPipelineDepthStencilStateCreateInfo dsInfo {};
     VkPipelineColorBlendStateCreateInfo bldInfo {};
     VkPipelineColorBlendAttachmentState colorBldAttaState {};
+    VkDynamicState dynamicState[2] {};
+    VkPipelineDynamicStateCreateInfo dynamicInfo {};
 };
 
 class Volcano {
@@ -472,6 +474,13 @@ public:
         fixfunc_templ.bldInfo.logicOpEnable = VK_FALSE;
         fixfunc_templ.bldInfo.attachmentCount = 1;
         fixfunc_templ.bldInfo.pAttachments = &fixfunc_templ.colorBldAttaState;
+
+        /* fixed function dynamic state */
+        fixfunc_templ.dynamicState[0] = VK_DYNAMIC_STATE_SCISSOR;
+        fixfunc_templ.dynamicState[1] = VK_DYNAMIC_STATE_VIEWPORT;
+        fixfunc_templ.dynamicInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+        fixfunc_templ.dynamicInfo.dynamicStateCount = 2;
+        fixfunc_templ.dynamicInfo.pDynamicStates = fixfunc_templ.dynamicState;
     }
 
     virtual void _bakePipelineCache(const string& filename, VkPipelineCache &pplcache) final {

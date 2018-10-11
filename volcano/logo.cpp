@@ -60,6 +60,10 @@ public:
             VkDeviceSize offset = {};
             VkBuffer _vertexBuf = resource_manager.queryBuf("vertexbuffer");
             vkCmdBindVertexBuffers(rendercmdbuf[i], 0, 1, &_vertexBuf, &offset);
+            VkRect2D scissor = { 10, 10, 780, 780 };
+            vkCmdSetScissor(rendercmdbuf[i], 0, 1, &scissor);
+            VkViewport vp = { 0.0, 0.0, 800, 800, 0.0, 1.0 };
+            vkCmdSetViewport(rendercmdbuf[i], 0, 1, &vp);
             vkCmdDraw(rendercmdbuf[i], 4, 1, 0, 0);
             vkCmdEndRenderPass(rendercmdbuf[i]);
 
@@ -361,7 +365,7 @@ public:
         gfxPipelineInfo.pMultisampleState = &fixfunc_templ.msaaInfo;
         gfxPipelineInfo.pDepthStencilState = &fixfunc_templ.dsInfo;
         gfxPipelineInfo.pColorBlendState = &fixfunc_templ.bldInfo;
-        gfxPipelineInfo.pDynamicState = nullptr;
+        gfxPipelineInfo.pDynamicState = &fixfunc_templ.dynamicInfo;
         gfxPipelineInfo.layout = layout;
         gfxPipelineInfo.renderPass = renderpass;
         gfxPipelineInfo.subpass = 0;
