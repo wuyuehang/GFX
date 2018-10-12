@@ -31,6 +31,7 @@ public:
         _bakePipelineCache("logo_pipeline_cache.bin", pplcache);
         InitGFXPipeline();
         //_diskPipelineCache("logo_pipeline_cache.bin", pplcache);
+        InitDescriptor();
         BakeCommand();
     }
 
@@ -309,21 +310,15 @@ public:
         VkPipelineLayoutCreateInfo layoutInfo = {};
         layoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 
-        VkDescriptorSetLayoutBinding SMPbinding = {};
-        SMPbinding.binding = 0;
-        SMPbinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        SMPbinding.descriptorCount = 1;
-        SMPbinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-        SMPbinding.pImmutableSamplers = nullptr;
-
-        VkDescriptorSetLayoutBinding UNIbinding = {};
-        UNIbinding.binding = 1;
-        UNIbinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        UNIbinding.descriptorCount = 1;
-        UNIbinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-        UNIbinding.pImmutableSamplers = nullptr;
-
-        VkDescriptorSetLayoutBinding bindings[2] = { SMPbinding, UNIbinding };
+        VkDescriptorSetLayoutBinding bindings[2] = {};
+        bindings[0].binding = 0;
+        bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        bindings[0].descriptorCount = 1;
+        bindings[0].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+        bindings[1].binding = 1;
+        bindings[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        bindings[1].descriptorCount = 1;
+        bindings[1].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
         VkDescriptorSetLayoutCreateInfo dsLayoutInfo = {};
         dsLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -331,6 +326,33 @@ public:
         dsLayoutInfo.pBindings = bindings;
         vkCreateDescriptorSetLayout(device, &dsLayoutInfo, nullptr, &descSetLayout);
 
+        layoutInfo.setLayoutCount = 1;
+        layoutInfo.pSetLayouts = &descSetLayout;
+
+        vkCreatePipelineLayout(device, &layoutInfo, nullptr, &layout);
+
+        VkGraphicsPipelineCreateInfo gfxPipelineInfo = {};
+        gfxPipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+        gfxPipelineInfo.stageCount = 2;
+        gfxPipelineInfo.pStages = shaderStageInfos;
+        gfxPipelineInfo.pVertexInputState = &vertInputInfo;
+        gfxPipelineInfo.pInputAssemblyState = &iaInfo;
+        gfxPipelineInfo.pViewportState = &fixfunc_templ.vpsInfo;
+        gfxPipelineInfo.pRasterizationState = &fixfunc_templ.rstInfo;
+        gfxPipelineInfo.pMultisampleState = &fixfunc_templ.msaaInfo;
+        gfxPipelineInfo.pDepthStencilState = &fixfunc_templ.dsInfo;
+        gfxPipelineInfo.pColorBlendState = &fixfunc_templ.bldInfo;
+        gfxPipelineInfo.pDynamicState = &fixfunc_templ.dynamicInfo;
+        gfxPipelineInfo.layout = layout;
+        gfxPipelineInfo.renderPass = renderpass;
+        gfxPipelineInfo.subpass = 0;
+
+        vkCreateGraphicsPipelines(device, pplcache, 1, &gfxPipelineInfo, nullptr, &gfxPipeline);
+        vkDestroyShaderModule(device, vertShaderModule, nullptr);
+        vkDestroyShaderModule(device, fragShaderModule, nullptr);
+    }
+
+    void InitDescriptor() {
         VkDescriptorPoolSize poolSize[2] = {};
         poolSize[0].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
         poolSize[0].descriptorCount = 1;
@@ -341,7 +363,7 @@ public:
         dsPoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
         dsPoolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
         dsPoolInfo.maxSets = 1;
-        dsPoolInfo.poolSizeCount =2;
+        dsPoolInfo.poolSizeCount = 2;
         dsPoolInfo.pPoolSizes = poolSize;
         vkCreateDescriptorPool(device, &dsPoolInfo, nullptr, &descPool);
 
@@ -381,37 +403,6 @@ public:
         wds[1].pBufferInfo = &descUniInfo;
 
         vkUpdateDescriptorSets(device, 2, wds, 0, nullptr);
-
-        layoutInfo.setLayoutCount = 1;
-        layoutInfo.pSetLayouts = &descSetLayout;
-        layoutInfo.pushConstantRangeCount = 0;
-        layoutInfo.pPushConstantRanges = nullptr;
-        vkCreatePipelineLayout(device, &layoutInfo, nullptr, &layout);
-
-        VkGraphicsPipelineCreateInfo gfxPipelineInfo = {};
-        gfxPipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-        gfxPipelineInfo.pNext = nullptr;
-        gfxPipelineInfo.flags = 0;
-        gfxPipelineInfo.stageCount = 2;
-        gfxPipelineInfo.pStages = shaderStageInfos;
-        gfxPipelineInfo.pVertexInputState = &vertInputInfo;
-        gfxPipelineInfo.pInputAssemblyState = &iaInfo;
-        gfxPipelineInfo.pTessellationState = nullptr;
-        gfxPipelineInfo.pViewportState = &fixfunc_templ.vpsInfo;
-        gfxPipelineInfo.pRasterizationState = &fixfunc_templ.rstInfo;
-        gfxPipelineInfo.pMultisampleState = &fixfunc_templ.msaaInfo;
-        gfxPipelineInfo.pDepthStencilState = &fixfunc_templ.dsInfo;
-        gfxPipelineInfo.pColorBlendState = &fixfunc_templ.bldInfo;
-        gfxPipelineInfo.pDynamicState = &fixfunc_templ.dynamicInfo;
-        gfxPipelineInfo.layout = layout;
-        gfxPipelineInfo.renderPass = renderpass;
-        gfxPipelineInfo.subpass = 0;
-        gfxPipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
-        gfxPipelineInfo.basePipelineIndex = -1;
-
-        vkCreateGraphicsPipelines(device, pplcache, 1, &gfxPipelineInfo, nullptr, &gfxPipeline);
-        vkDestroyShaderModule(device, vertShaderModule, nullptr);
-        vkDestroyShaderModule(device, fragShaderModule, nullptr);
     }
 
 public:
