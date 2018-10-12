@@ -1,5 +1,7 @@
 #include <SOIL/SOIL.h>
 #include "volcano.hpp"
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 class App : public Volcano {
 public:
@@ -49,7 +51,7 @@ public:
 
             VkClearValue cvs[2] = {};
             cvs[0].color = {0.05, 0.0, 0.0, 1.0};
-            cvs[1].depthStencil = { 0.5, 0 };
+            cvs[1].depthStencil = { 1.0, 0 };
             rpBeginInfo.clearValueCount = 2;
             rpBeginInfo.pClearValues = cvs;
 
@@ -215,16 +217,28 @@ public:
     }
 
     void InitBuffers() {
-        float z = 0.3;
         float position[] = {
-            -1.0, -1.0, z, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0,
-            -1.0, 1.0, z, 1.0, 0.0, 0.0, 1.0, 0.0, 1.0,
-            1.0, -1.0, z, 1.0, 0.0, 0.0, 1.0, 1.0, 0.0,
-            1.0, 1.0, z, 1.0, 0.0, 0.0, 1.0, 1.0, 1.0,
+            -1.0, -1.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0,
+            -1.0, 1.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 1.0,
+            1.0, -1.0, 0.0, 1.0, 0.0, 0.0, 1.0, 1.0, 0.0,
+            1.0, 1.0, 0.0, 1.0, 0.0, 0.0, 1.0, 1.0, 1.0,
         };
 
         resource_manager.allocBuf(device, pdmp, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
                 sizeof(position), position, "vertexbuffer", VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+        glm::mat4 view_mat = glm::lookAt(
+            glm::vec3(1, -1, 1),
+            glm::vec3(0, 0, 0),
+            glm::vec3(0, 1, 0)
+        );
+        glm::mat4 model_mat = glm::scale(glm::mat4(1.0), glm::vec3(0.5f, 0.5f, 0.5f));
+        glm::mat4 proj_mat = glm::perspective(glm::radians(60.0f), 1.0f, 0.1f, 10.0f);
+
+        MVP_mat = proj_mat * view_mat * model_mat;
+        resource_manager.allocBuf(device, pdmp, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                sizeof(MVP_mat), &MVP_mat, "mvp_uniform_buf", VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
                 VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
     }
 
@@ -302,21 +316,33 @@ public:
         SMPbinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
         SMPbinding.pImmutableSamplers = nullptr;
 
+        VkDescriptorSetLayoutBinding UNIbinding = {};
+        UNIbinding.binding = 1;
+        UNIbinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        UNIbinding.descriptorCount = 1;
+        UNIbinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+        UNIbinding.pImmutableSamplers = nullptr;
+
+        VkDescriptorSetLayoutBinding bindings[2] = { SMPbinding, UNIbinding };
+
         VkDescriptorSetLayoutCreateInfo dsLayoutInfo = {};
         dsLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-        dsLayoutInfo.bindingCount = 1;
-        dsLayoutInfo.pBindings = &SMPbinding;
+        dsLayoutInfo.bindingCount = 2;
+        dsLayoutInfo.pBindings = bindings;
         vkCreateDescriptorSetLayout(device, &dsLayoutInfo, nullptr, &descSetLayout);
 
-        VkDescriptorPoolSize poolSize = {};
-        poolSize.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        poolSize.descriptorCount = 1;
+        VkDescriptorPoolSize poolSize[2] = {};
+        poolSize[0].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        poolSize[0].descriptorCount = 1;
+        poolSize[1].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        poolSize[1].descriptorCount = 1;
+
         VkDescriptorPoolCreateInfo dsPoolInfo = {};
         dsPoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
         dsPoolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
         dsPoolInfo.maxSets = 1;
-        dsPoolInfo.poolSizeCount =1;
-        dsPoolInfo.pPoolSizes = &poolSize;
+        dsPoolInfo.poolSizeCount =2;
+        dsPoolInfo.pPoolSizes = poolSize;
         vkCreateDescriptorPool(device, &dsPoolInfo, nullptr, &descPool);
 
         VkDescriptorSetAllocateInfo dsAllocInfo = {};
@@ -332,18 +358,29 @@ public:
         descImgInfo.imageView = tx2d_imgv;
         descImgInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
-        VkWriteDescriptorSet wds = {};
-        wds.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        wds.pNext = nullptr;
-        wds.dstSet = descSet;
-        wds.dstBinding = 0;
-        wds.dstArrayElement = 0;
-        wds.descriptorCount = 1;
-        wds.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        wds.pImageInfo = &descImgInfo;
-        wds.pBufferInfo = nullptr;
-        wds.pTexelBufferView = nullptr;
-        vkUpdateDescriptorSets(device, 1, &wds, 0, nullptr);
+        VkDescriptorBufferInfo descUniInfo = {};
+        descUniInfo.buffer = resource_manager.queryBuf("mvp_uniform_buf");
+        descUniInfo.offset = 0;
+        descUniInfo.range = sizeof(glm::mat4);
+
+        VkWriteDescriptorSet wds[2] = {};
+        wds[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        wds[0].dstSet = descSet;
+        wds[0].dstBinding = 0;
+        wds[0].dstArrayElement = 0;
+        wds[0].descriptorCount = 1;
+        wds[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        wds[0].pImageInfo = &descImgInfo;
+
+        wds[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        wds[1].dstSet = descSet;
+        wds[1].dstBinding = 1;
+        wds[1].dstArrayElement = 0;
+        wds[1].descriptorCount = 1;
+        wds[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        wds[1].pBufferInfo = &descUniInfo;
+
+        vkUpdateDescriptorSets(device, 2, wds, 0, nullptr);
 
         layoutInfo.setLayoutCount = 1;
         layoutInfo.pSetLayouts = &descSetLayout;
@@ -390,6 +427,7 @@ public:
     VkDescriptorSetLayout descSetLayout;
     VkDescriptorPool descPool;
     VkDescriptorSet descSet;
+    glm::mat4 MVP_mat;
 };
 
 int main(int argc, char const *argv[])
