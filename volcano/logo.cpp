@@ -51,7 +51,7 @@ public:
             rpBeginInfo.renderArea.extent = surfacecapkhr.currentExtent;
 
             VkClearValue cvs[2] = {};
-            cvs[0].color = {0.05, 0.0, 0.0, 1.0};
+            cvs[0].color = {0.01, 0.02, 0.0, 1.0};
             cvs[1].depthStencil = { 1.0, 0 };
             rpBeginInfo.clearValueCount = 2;
             rpBeginInfo.pClearValues = cvs;
@@ -67,6 +67,8 @@ public:
             vkCmdSetScissor(rendercmdbuf[i], 0, 1, &scissor);
             VkViewport vp = { 0.0, 0.0, 800, 800, 0.0, 1.0 };
             vkCmdSetViewport(rendercmdbuf[i], 0, 1, &vp);
+            float pcv = 0.05;
+            vkCmdPushConstants(rendercmdbuf[i], layout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(float), &pcv);
             vkCmdDraw(rendercmdbuf[i], 4, 1, 0, 0);
             vkCmdEndRenderPass(rendercmdbuf[i]);
 
@@ -328,6 +330,13 @@ public:
 
         layoutInfo.setLayoutCount = 1;
         layoutInfo.pSetLayouts = &descSetLayout;
+
+        VkPushConstantRange pcr = {};
+        pcr.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+        pcr.offset = 0;
+        pcr.size = sizeof(float);
+        layoutInfo.pushConstantRangeCount = 1;
+        layoutInfo.pPushConstantRanges = &pcr;
 
         vkCreatePipelineLayout(device, &layoutInfo, nullptr, &layout);
 

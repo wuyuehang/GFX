@@ -6,6 +6,10 @@ layout (location = 1) in vec2 texc;
 layout (location = 0) out vec4 OC;
 layout (binding = 0) uniform sampler2D txcsmp;
 
+layout (push_constant) uniform weight {
+    float factor;
+};
+
 void main() {
-    OC = 0.15 * varying_colr + 0.85 * texture(txcsmp, texc);
+    OC = factor * varying_colr + (1 - factor) * texture(txcsmp, texc);
 }
