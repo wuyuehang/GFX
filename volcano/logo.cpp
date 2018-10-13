@@ -26,7 +26,11 @@ public:
 
     App() {
         InitBuffers();
+#if 1
+        BakeLinearTexture2D();
+#else
         BakeTexture2D();
+#endif
         InitSampler();
         _bakePipelineCache("logo_pipeline_cache.bin", pplcache);
         InitGFXPipeline();
@@ -188,6 +192,113 @@ public:
         imb.subresourceRange.baseArrayLayer = 0;
         imb.subresourceRange.layerCount = 1;
         vkCmdPipelineBarrier(transitionCMD, VK_PIPELINE_STAGE_TRANSFER_BIT,
+            VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &imb);
+
+        vkEndCommandBuffer(transitionCMD);
+        VkSubmitInfo si = {};
+        si.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+        si.commandBufferCount = 1;
+        si.pCommandBuffers = &transitionCMD;
+        vkQueueSubmit(queue, 1, &si, VK_NULL_HANDLE);
+        vkQueueWaitIdle(queue);
+        vkFreeCommandBuffers(device, rendercmdpool, 1, &transitionCMD);
+    }
+
+    void BakeLinearTexture2D() {
+        int width, height;
+        uint8_t *img = SOIL_load_image("mayon-volcano-erupt.jpg", &width, &height, 0, SOIL_LOAD_RGBA);
+
+        VkImageCreateInfo imgInfo = {};
+        imgInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+        imgInfo.imageType = VK_IMAGE_TYPE_2D;
+        imgInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
+        imgInfo.extent.width = width;
+        imgInfo.extent.height = height;
+        imgInfo.extent.depth = 1;
+        imgInfo.mipLevels = 1;
+        imgInfo.arrayLayers = 1;
+        imgInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+        imgInfo.tiling = VK_IMAGE_TILING_LINEAR;
+        imgInfo.usage = VK_IMAGE_USAGE_SAMPLED_BIT;
+        imgInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+        imgInfo.initialLayout = VK_IMAGE_LAYOUT_PREINITIALIZED;
+        vkCreateImage(device, &imgInfo, nullptr, &tx2d_img);
+
+        VkMemoryRequirements req = {};
+        vkGetImageMemoryRequirements(device, tx2d_img, &req);
+
+        VkMemoryAllocateInfo allocInfo {};
+        allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+        allocInfo.allocationSize = req.size;
+        allocInfo.memoryTypeIndex = resource_manager.findProperties(&pdmp, req.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+        vkAllocateMemory(device, &allocInfo, nullptr, &tx2d_mem);
+
+        vkBindImageMemory(device, tx2d_img, tx2d_mem, 0);
+
+        VkImageViewCreateInfo imgViewInfo = {};
+        imgViewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+        imgViewInfo.image = tx2d_img;
+        imgViewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+        imgViewInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
+        imgViewInfo.components.r = VK_COMPONENT_SWIZZLE_R;
+        imgViewInfo.components.g = VK_COMPONENT_SWIZZLE_G;
+        imgViewInfo.components.b = VK_COMPONENT_SWIZZLE_B;
+        imgViewInfo.components.a = VK_COMPONENT_SWIZZLE_A;
+        imgViewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        imgViewInfo.subresourceRange.baseMipLevel = 0;
+        imgViewInfo.subresourceRange.levelCount = 1;
+        imgViewInfo.subresourceRange.baseArrayLayer = 0;
+        imgViewInfo.subresourceRange.layerCount = 1;
+        vkCreateImageView(device, &imgViewInfo, nullptr, &tx2d_imgv);
+
+        VkImageSubresource subresource = {};
+        subresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        subresource.mipLevel = 0;
+        subresource.arrayLayer = 0;
+
+        VkSubresourceLayout subresource_layout = {};
+        vkGetImageSubresourceLayout(device, tx2d_img, &subresource, &subresource_layout);
+
+        uint8_t *pDST = nullptr;
+
+        vkMapMemory(device, tx2d_mem, 0, req.size, 0, (void **)&pDST);
+        for (int i = 0; i < height; i++) {
+            memcpy(pDST, (img + width * i * 4), width * 4);
+            pDST = pDST + subresource_layout.rowPitch;
+        }
+        vkUnmapMemory(device, tx2d_mem);
+
+        SOIL_free_image_data(img);
+
+        /* transition texture layout */
+        VkCommandBuffer transitionCMD = VK_NULL_HANDLE;
+        VkCommandBufferAllocateInfo transitionCMDAllocInfo {};
+        transitionCMDAllocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+        transitionCMDAllocInfo.commandPool = rendercmdpool;
+        transitionCMDAllocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+        transitionCMDAllocInfo.commandBufferCount = 1;
+        vkAllocateCommandBuffers(device, &transitionCMDAllocInfo, &transitionCMD);
+
+        VkCommandBufferBeginInfo cbi = {};
+        cbi.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+        cbi.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+        vkBeginCommandBuffer(transitionCMD, &cbi);
+
+        VkImageMemoryBarrier imb = {};
+        imb.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+        imb.srcAccessMask = VK_ACCESS_HOST_WRITE_BIT;
+        imb.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+        imb.oldLayout = VK_IMAGE_LAYOUT_PREINITIALIZED;
+        imb.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        imb.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        imb.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        imb.image = tx2d_img;
+        imb.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        imb.subresourceRange.baseMipLevel = 0;
+        imb.subresourceRange.levelCount = 1;
+        imb.subresourceRange.baseArrayLayer = 0;
+        imb.subresourceRange.layerCount = 1;
+        vkCmdPipelineBarrier(transitionCMD, VK_PIPELINE_STAGE_HOST_BIT,
             VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &imb);
 
         vkEndCommandBuffer(transitionCMD);
