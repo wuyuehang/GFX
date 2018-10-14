@@ -10,15 +10,21 @@ LDFLAGS_XCB = -L$(VK_SDK_PATH)/lib -lvulkan `pkg-config --libs xcb`
 
 .PHONY: clean run all
 
-binary = vc_logo
+binary = vc_logo \
+	vc_texelbuf
 
 all: $(binary)
 
 vc_logo : logo.cpp volcano.hpp
 	g++ $(CXXFLAGS) -o $@ $^ $(LDFLAGS) -lSOIL
 
+vc_texelbuf : texelbuf.cpp volcano.hpp
+	g++ $(CXXFLAGS) -o $@ $^ $(LDFLAGS) -lSOIL
+
 spv :
+	$(VK_SDK_PATH)/bin/glslangValidator -V single_attribute.vert -o single_attribute.vert.spv
 	$(VK_SDK_PATH)/bin/glslangValidator -V triple_attribute.vert -o triple_attribute.vert.spv
+	$(VK_SDK_PATH)/bin/glslangValidator -V texelbuf.frag -o texelbuf.frag.spv
 	$(VK_SDK_PATH)/bin/glslangValidator -V dual_attribute.frag -o dual_attribute.frag.spv
 
 clean:
