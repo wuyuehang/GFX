@@ -18,7 +18,7 @@ public:
 
     /* Find a memory in `memoryTypeBitsRequirement` that includes all of `requiredProperties`
      * this function is copied from vulkan spec */
-    int32_t findProperties(const VkPhysicalDeviceMemoryProperties* pMemoryProperties,
+    uint32_t findProperties(const VkPhysicalDeviceMemoryProperties* pMemoryProperties,
         uint32_t memoryTypeBitsRequirement, VkMemoryPropertyFlags requiredProperties) {
         const uint32_t memoryCount = pMemoryProperties->memoryTypeCount;
 
@@ -30,7 +30,7 @@ public:
             const bool hasRequiredProperties = (properties & requiredProperties) == requiredProperties;
 
             if (isRequiredMemoryType && hasRequiredProperties)
-                return static_cast<int32_t>(idx);
+                return idx;
         }
         assert(0);
     }
