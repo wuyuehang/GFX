@@ -14,7 +14,8 @@ binary = vc_logo \
 	vc_texelbuf \
 	vc_multiple_descriptor_set \
 	vc_loadstore_frag \
-	vc_loadstore_comp
+	vc_loadstore_comp \
+	vc_loadstore_comp_opt
 
 all: $(binary)
 
@@ -31,6 +32,9 @@ vc_loadstore_frag : loadstore_frag.cpp lava.hpp
 	g++ $(CXXFLAGS) -o $@ $^ $(LDFLAGS) -lSOIL
 
 vc_loadstore_comp : loadstore_comp.cpp lava.hpp
+	g++ $(CXXFLAGS) -o $@ $^ $(LDFLAGS) -lSOIL
+
+vc_loadstore_comp_opt : loadstore_comp_opt.cpp lava.hpp
 	g++ $(CXXFLAGS) -o $@ $^ $(LDFLAGS) -lSOIL
 
 spv :
