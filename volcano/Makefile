@@ -15,7 +15,8 @@ binary = vc_logo \
 	vc_multiple_descriptor_set \
 	vc_loadstore_frag \
 	vc_loadstore_comp \
-	vc_loadstore_comp_opt
+	vc_loadstore_comp_opt \
+	vc_loadstore_comp_cqs
 
 all: $(binary)
 
@@ -37,6 +38,9 @@ vc_loadstore_comp : loadstore_comp.cpp lava.hpp
 vc_loadstore_comp_opt : loadstore_comp_opt.cpp lava.hpp
 	g++ $(CXXFLAGS) -o $@ $^ $(LDFLAGS) -lSOIL
 
+vc_loadstore_comp_cqs : loadstore_comp_cqs.cpp lava_lite.hpp
+	g++ $(CXXFLAGS) -o $@ $^ $(LDFLAGS) -lSOIL
+
 spv :
 	$(VK_SDK_PATH)/bin/glslangValidator -V single_attribute.vert -o single_attribute.vert.spv
 	$(VK_SDK_PATH)/bin/glslangValidator -V triple_attribute.vert -o triple_attribute.vert.spv
@@ -49,6 +53,7 @@ spv :
 	$(VK_SDK_PATH)/bin/glslangValidator -V loadstore_comp.comp -o loadstore_comp.comp.spv
 	$(VK_SDK_PATH)/bin/glslangValidator -V quad.vert -o quad.vert.spv
 	$(VK_SDK_PATH)/bin/glslangValidator -V quad.frag -o quad.frag.spv
+	$(VK_SDK_PATH)/bin/glslangValidator -V loadstore_comp_cqs.comp -o loadstore_comp_cqs.comp.spv
 
 clean:
 	rm -rf $(binary)
