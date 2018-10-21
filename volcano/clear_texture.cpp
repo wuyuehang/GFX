@@ -279,7 +279,7 @@ public:
             .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
             .descriptorCount = 1,
             .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
-            .pImmutableSamplers = nullptr,
+            .pImmutableSamplers = &smp, // here add immutabl sampler upon descriptor set layout create
         };
 
         VkDescriptorSetLayoutCreateInfo dsLayoutInfo = {
@@ -358,7 +358,7 @@ public:
         /* Update DescriptorSets */
         VkDescriptorImageInfo descImgInfo[] = {
             [0] = {
-                .sampler = smp,
+                .sampler = nullptr,
                 .imageView = texObj.imgv,
                 .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
             }
