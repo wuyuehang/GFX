@@ -142,6 +142,9 @@ public:
             case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL:
                 imb.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
                 break;
+            case VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL:
+                imb.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+                break;
             default:
                 assert(0);
         }

@@ -17,7 +17,8 @@ binary = vc_logo \
 	vc_loadstore_comp \
 	vc_loadstore_comp_opt \
 	vc_loadstore_comp_cqs \
-	vc_clear_texture
+	vc_clear_texture \
+	vc_blit
 
 all: $(binary)
 
@@ -43,6 +44,9 @@ vc_loadstore_comp_cqs : loadstore_comp_cqs.cpp lava_lite.hpp
 	g++ $(CXXFLAGS) -o $@ $^ $(LDFLAGS) -lSOIL
 
 vc_clear_texture : clear_texture.cpp lava_lite.hpp
+	g++ $(CXXFLAGS) -o $@ $^ $(LDFLAGS) -lSOIL
+
+vc_blit : blit.cpp lava_lite.hpp
 	g++ $(CXXFLAGS) -o $@ $^ $(LDFLAGS) -lSOIL
 
 spv :
