@@ -92,7 +92,7 @@ public:
         return module;
     }
 
-    void transitionImgLayout(VkImage img, VkImageLayout ol, VkImageLayout nl,
+    void preTransitionImgLayout(VkImage img, VkImageLayout ol, VkImageLayout nl,
         VkPipelineStageFlags src, VkPipelineStageFlags dst) {
         VkImageMemoryBarrier imb {};
         imb.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -119,6 +119,12 @@ public:
             case VK_IMAGE_LAYOUT_PREINITIALIZED:
                 imb.srcAccessMask = VK_ACCESS_HOST_WRITE_BIT;
                 break;
+            case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:
+                imb.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
+                break;
+            case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL:
+                imb.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+                break;
             default:
                 assert(0);
         }
@@ -132,6 +138,9 @@ public:
                 break;
             case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:
                 imb.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+                break;
+            case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL:
+                imb.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
                 break;
             default:
                 assert(0);
@@ -159,6 +168,68 @@ public:
 
         vkQueueSubmit(nongfxQ, 1, &si, VK_NULL_HANDLE);
         vkQueueWaitIdle(nongfxQ);
+    }
+
+    void transitionImgLayout(VkCommandBuffer cmdbuf, VkImage img, VkImageLayout ol, VkImageLayout nl,
+        VkPipelineStageFlags src, VkPipelineStageFlags dst) {
+        VkImageMemoryBarrier imb {};
+        imb.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+        imb.oldLayout = ol;
+        imb.newLayout = nl;
+        imb.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        imb.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        imb.image = img;
+        imb.subresourceRange.baseMipLevel = 0;
+        imb.subresourceRange.levelCount = 1;
+        imb.subresourceRange.baseArrayLayer = 0;
+        imb.subresourceRange.layerCount = 1;
+
+        if (nl == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL) {
+            imb.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+        } else {
+            imb.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        }
+
+        switch (ol) {
+            case VK_IMAGE_LAYOUT_UNDEFINED:
+                imb.srcAccessMask = 0;
+                break;
+            case VK_IMAGE_LAYOUT_PREINITIALIZED:
+                imb.srcAccessMask = VK_ACCESS_HOST_WRITE_BIT;
+                break;
+            case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:
+                imb.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
+                break;
+            case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL:
+                imb.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+                break;
+            default:
+                assert(0);
+        }
+
+        switch (nl) {
+            case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL:
+                imb.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+                break;
+            case VK_IMAGE_LAYOUT_GENERAL:
+                imb.dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
+                break;
+            case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:
+                imb.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+                break;
+            case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL:
+                imb.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+                break;
+            default:
+                assert(0);
+        }
+
+        vkCmdPipelineBarrier(cmdbuf,
+            src, dst,
+            0,
+            0, nullptr,
+            0, nullptr,
+            1, &imb);
     }
 
 private:
@@ -366,7 +437,7 @@ private:
 
         vkCreateImageView(device, &vi, nullptr, &depth_imgv);
 
-        transitionImgLayout(depth_img, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+        preTransitionImgLayout(depth_img, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
             VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT);
     }
 
