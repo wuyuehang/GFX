@@ -1,2 +1,4 @@
 *.spv
 vc_*
+ovc_*
+*.tga
