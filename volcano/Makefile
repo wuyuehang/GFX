@@ -18,7 +18,8 @@ binary = vc_logo \
 	vc_loadstore_comp_opt \
 	vc_loadstore_comp_cqs \
 	vc_clear_texture \
-	vc_blit
+	vc_blit \
+	vc_separate_sampler
 
 all: $(binary)
 
@@ -49,6 +50,9 @@ vc_clear_texture : clear_texture.cpp lava_lite.hpp
 vc_blit : blit.cpp lava_lite.hpp
 	g++ $(CXXFLAGS) -o $@ $^ $(LDFLAGS) -lSOIL
 
+vc_separate_sampler : separate_sampler.cpp lava_lite.hpp
+	g++ $(CXXFLAGS) -o $@ $^ $(LDFLAGS) -lSOIL
+
 spv :
 	$(VK_SDK_PATH)/bin/glslangValidator -V single_attribute.vert -o single_attribute.vert.spv
 	$(VK_SDK_PATH)/bin/glslangValidator -V triple_attribute.vert -o triple_attribute.vert.spv
@@ -62,6 +66,7 @@ spv :
 	$(VK_SDK_PATH)/bin/glslangValidator -V quad.vert -o quad.vert.spv
 	$(VK_SDK_PATH)/bin/glslangValidator -V quad.frag -o quad.frag.spv
 	$(VK_SDK_PATH)/bin/glslangValidator -V loadstore_comp_cqs.comp -o loadstore_comp_cqs.comp.spv
+	$(VK_SDK_PATH)/bin/glslangValidator -V quad_separate_sampler.frag -o quad_separate_sampler.frag.spv
 
 clean:
 	rm -rf $(binary)
