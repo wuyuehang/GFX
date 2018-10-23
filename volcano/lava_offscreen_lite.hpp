@@ -729,6 +729,7 @@ public:
     vector<TexObj> texDustbin; /* collection of texture objects */
     ResouceMgnt resource_manager;
     PSOTemplate fixfunc_templ;
+    VkCommandPool cmdpool;
     vector<VkCommandBuffer> cmdbuf;
     VkQueue gfxQ; /* support GFX and presentation */
     VkQueue nongfxQ; /* support compute and transfer */
@@ -741,7 +742,6 @@ private:
     vector<VkQueueFamilyProperties> queueFamily;
     uint32_t gfxQueueIndex;
     uint32_t nongfxQueueIndex;
-    VkCommandPool cmdpool;
 };
 
 #endif

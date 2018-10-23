@@ -20,7 +20,8 @@ binary = vc_logo \
 	vc_clear_texture \
 	vc_blit \
 	vc_separate_sampler \
-	ovc_logo
+	ovc_logo \
+	ovc_secondary_command
 
 all: $(binary)
 
@@ -55,6 +56,9 @@ vc_separate_sampler : separate_sampler.cpp lava_lite.hpp
 	g++ $(CXXFLAGS) -o $@ $^ $(LDFLAGS) -lSOIL
 
 ovc_logo : offscreen_logo.cpp lava_offscreen_lite.hpp
+	g++ $(CXXFLAGS) -o $@ $^ $(LDFLAGS) -lSOIL
+
+ovc_secondary_command : offscreen_secondary_command.cpp lava_offscreen_lite.hpp
 	g++ $(CXXFLAGS) -o $@ $^ $(LDFLAGS) -lSOIL
 
 spv :
