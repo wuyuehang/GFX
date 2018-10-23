@@ -389,13 +389,22 @@ public:
         spDesc.preserveAttachmentCount = 0;
         spDesc.pPreserveAttachments = nullptr;
 
-        VkSubpassDependency subpassDep = {};
-        subpassDep.srcSubpass = VK_SUBPASS_EXTERNAL;
-        subpassDep.dstSubpass = 0;
-        subpassDep.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-        subpassDep.srcAccessMask = 0;
-        subpassDep.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-        subpassDep.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+        VkSubpassDependency subpassDep[2] = {};
+        subpassDep[0].srcSubpass = VK_SUBPASS_EXTERNAL;
+        subpassDep[0].dstSubpass = 0;
+        subpassDep[0].srcStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+        subpassDep[0].srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+        subpassDep[0].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+        subpassDep[0].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+        subpassDep[0].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+
+        subpassDep[1].srcSubpass = 0;
+        subpassDep[1].dstSubpass = VK_SUBPASS_EXTERNAL;
+        subpassDep[1].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+        subpassDep[1].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+        subpassDep[1].dstStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+        subpassDep[1].dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+        subpassDep[1].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
 
         VkRenderPassCreateInfo rpInfo = {};
         rpInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
@@ -406,8 +415,8 @@ public:
         rpInfo.pAttachments = attDescs;
         rpInfo.subpassCount = 1;
         rpInfo.pSubpasses = &spDesc;
-        rpInfo.dependencyCount = 1;
-        rpInfo.pDependencies = &subpassDep;
+        rpInfo.dependencyCount = 2;
+        rpInfo.pDependencies = subpassDep;
 
         vkCreateRenderPass(device, &rpInfo, nullptr, &renderpass);
     }
