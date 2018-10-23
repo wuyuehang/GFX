@@ -233,11 +233,6 @@ public:
         vkAllocateDescriptorSets(device, &dsAllocInfo, &descSet);
 
         /* Update DescriptorSets */
-        VkDescriptorBufferInfo descTexelbufInfo = {};
-        descTexelbufInfo.buffer = resource_manager.queryBuf("texelbuf");
-        descTexelbufInfo.offset = 0;
-        descTexelbufInfo.range = 800*800*4;
-
         VkDescriptorBufferInfo descUniInfo = {};
         descUniInfo.buffer = resource_manager.queryBuf("mvp_uniform_buf");
         descUniInfo.offset = 0;

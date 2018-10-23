@@ -65,7 +65,7 @@ public:
         vkMapMemory(dev, bufMem, 0, req.size, 0, (void **)&pDST);
 
         uint8_t *pSRC = (uint8_t *)pDATA;
-        for (int32_t i = 0; i < req.size; i++) {
+        for (uint32_t i = 0; i < req.size; i++) {
             *(pDST + i) = *(pSRC + i);
         }
 

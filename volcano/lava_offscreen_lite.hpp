@@ -299,7 +299,7 @@ public:
         uint8_t *pSRC = new uint8_t [sl.size];
 
         vkMapMemory(device, stagingLinearTexObj.mem, 0, sl.size, 0, (void **)&pDST);
-        for (int i = 0; i < h; i++) {
+        for (uint32_t i = 0; i < h; i++) {
             memcpy(pSRC + i*w*4, pDST + i*sl.rowPitch, w*4);
         }
         vkUnmapMemory(device, stagingLinearTexObj.mem);

@@ -505,7 +505,6 @@ public:
             memcpy(&vendorid, buffer.data() + 8, 4);
             memcpy(&deviceid, buffer.data() + 12, 4);
             memcpy(uuid, buffer.data() + 16, VK_UUID_SIZE);
-            VkBool32 invalidate = VK_FALSE;
             if (hdrlength > 0 && ppchdrver == VK_PIPELINE_CACHE_HEADER_VERSION_ONE &&
                 vendorid == pdp.vendorID && deviceid == pdp.deviceID &&
                 memcmp(uuid, pdp.pipelineCacheUUID, VK_UUID_SIZE) == 0) {
