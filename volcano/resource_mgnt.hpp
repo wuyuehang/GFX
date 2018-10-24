@@ -60,17 +60,19 @@ public:
         allocBufInfo.memoryTypeIndex = memoryType;
 
         vkAllocateMemory(dev, &allocBufInfo, nullptr, &bufMem);
-
-        uint8_t *pDST = nullptr;
-        vkMapMemory(dev, bufMem, 0, req.size, 0, (void **)&pDST);
-
-        uint8_t *pSRC = (uint8_t *)pDATA;
-        for (uint32_t i = 0; i < req.size; i++) {
-            *(pDST + i) = *(pSRC + i);
-        }
-
-        vkUnmapMemory(dev, bufMem);
         vkBindBufferMemory(dev, buf, bufMem, 0);
+
+        if (pDATA != nullptr) {
+            uint8_t *pDST = nullptr;
+            vkMapMemory(dev, bufMem, 0, req.size, 0, (void **)&pDST);
+
+            uint8_t *pSRC = (uint8_t *)pDATA;
+            for (uint32_t i = 0; i < req.size; i++) {
+                *(pDST + i) = *(pSRC + i);
+            }
+
+            vkUnmapMemory(dev, bufMem);
+        }
 
         _buf.insert(map<const string, pair<VkBuffer, VkDeviceMemory>>::value_type(token, make_pair(buf, bufMem)));
 
@@ -88,6 +90,26 @@ public:
         auto res = _buf.find(token);
         assert(res != _buf.end());
         return res->second.first;
+    }
+
+    void updateBufContent(VkDevice dev, const string token, const void *pDATA) {
+        auto res = _buf.find(token);
+        assert(res != _buf.end());
+        VkBuffer buf = res->second.first;
+        VkDeviceMemory bufMem = res->second.second;
+
+        VkMemoryRequirements req {};
+        vkGetBufferMemoryRequirements(dev, buf, &req);
+
+        uint8_t *pDST = nullptr;
+        vkMapMemory(dev, bufMem, 0, req.size, 0, (void **)&pDST);
+
+        uint8_t *pSRC = (uint8_t *)pDATA;
+        for (uint32_t i = 0; i < req.size; i++) {
+            *(pDST + i) = *(pSRC + i);
+        }
+
+        vkUnmapMemory(dev, bufMem);
     }
 
 private:

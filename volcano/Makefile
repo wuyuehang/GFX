@@ -21,7 +21,8 @@ binary = vc_logo \
 	vc_blit \
 	vc_separate_sampler \
 	ovc_logo \
-	ovc_secondary_command
+	ovc_secondary_command \
+	vc_camera_roam
 
 all: $(binary)
 
@@ -61,6 +62,9 @@ ovc_logo : offscreen_logo.cpp lava_offscreen_lite.hpp
 ovc_secondary_command : offscreen_secondary_command.cpp lava_offscreen_lite.hpp
 	g++ $(CXXFLAGS) -o $@ $^ $(LDFLAGS) -lSOIL
 
+vc_camera_roam : camera_roam.cpp lava_lite.hpp controller.hpp
+	g++ $(CXXFLAGS) -o $@ $^ $(LDFLAGS) -lSOIL
+
 spv :
 	$(VK_SDK_PATH)/bin/glslangValidator -V single_attribute.vert -o single_attribute.vert.spv
 	$(VK_SDK_PATH)/bin/glslangValidator -V triple_attribute.vert -o triple_attribute.vert.spv
@@ -76,6 +80,7 @@ spv :
 	$(VK_SDK_PATH)/bin/glslangValidator -V loadstore_comp_cqs.comp -o loadstore_comp_cqs.comp.spv
 	$(VK_SDK_PATH)/bin/glslangValidator -V quad_separate_sampler.frag -o quad_separate_sampler.frag.spv
 	$(VK_SDK_PATH)/bin/glslangValidator -V dual_attribute.vert -o dual_attribute.vert.spv
+	$(VK_SDK_PATH)/bin/glslangValidator -V quad_separate_sampler.vert -o quad_separate_sampler.vert.spv
 
 clean:
 	rm -rf $(binary)
