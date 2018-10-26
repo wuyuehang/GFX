@@ -22,7 +22,8 @@ binary = vc_logo \
 	vc_separate_sampler \
 	ovc_logo \
 	ovc_secondary_command \
-	vc_camera_roam
+	vc_camera_roam \
+	vc_object_spinner
 
 all: $(binary)
 
@@ -63,6 +64,9 @@ ovc_secondary_command : offscreen_secondary_command.cpp lava_offscreen_lite.hpp
 	g++ $(CXXFLAGS) -o $@ $^ $(LDFLAGS) -lSOIL
 
 vc_camera_roam : camera_roam.cpp lava_lite.hpp controller.hpp
+	g++ $(CXXFLAGS) -o $@ $^ $(LDFLAGS) -lSOIL
+
+vc_object_spinner : object_spinner.cpp lava_lite.hpp controller.hpp
 	g++ $(CXXFLAGS) -o $@ $^ $(LDFLAGS) -lSOIL
 
 spv :
