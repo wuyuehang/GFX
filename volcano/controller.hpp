@@ -147,8 +147,6 @@ public:
         posture.xmarch = 0;
         posture.ymarch = 0;
         posture.valid = false;
-
-        center = glm::vec2(w/2, h/2);
     }
 
     void onKeyEvent(GLFWwindow* win, int key, int scancode, int action, int mode) {
@@ -165,19 +163,10 @@ public:
             posture.lastX = xpos;
             posture.lastY = ypos;
 
-            float sensitivity = 0.15f;
-            xoffset *= sensitivity;
-            yoffset *= sensitivity;
-
-            posture.xmarch = xoffset;
-            posture.ymarch = yoffset;
-
-            glm::vec3 reference = glm::vec3(0, 0, 1);
-            glm::mat4 gx = glm::rotate(glm::radians(posture.xmarch), glm::vec3(0.0, 1.0, 0.0));
-            reference = glm::mat3(gx) * reference;
-            glm::vec3 axis = glm::cross(reference, glm::vec3(0, 1, 0));
-            glm::mat4 gy = glm::rotate(glm::radians(posture.ymarch), axis);
-            model_mat = gy * gx * model_mat;
+            posture.ymarch = yoffset * 0.15;
+            model_mat *= glm::rotate(glm::radians(-posture.ymarch), glm::vec3(1, 0, 0));
+            posture.xmarch = xoffset * 0.15;
+            model_mat *= glm::rotate(glm::radians(posture.xmarch), glm::vec3(0, 1, 0));
         }
     }
 
@@ -212,7 +201,6 @@ public:
     glm::mat4 model_mat;
     glm::mat4 view_mat;
     glm::mat4 proj_mat;
-    glm::vec2 center;
 };
 
 #endif
