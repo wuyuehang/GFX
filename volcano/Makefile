@@ -24,7 +24,8 @@ binary = vc_logo \
 	ovc_secondary_command \
 	vc_camera_roam \
 	vc_object_spinner \
-	vc_push_descriptorset
+	vc_push_descriptorset \
+	vc_specialize_constant
 
 all: $(binary)
 
@@ -73,6 +74,9 @@ vc_object_spinner : object_spinner.cpp lava_lite.hpp controller.hpp
 vc_push_descriptorset : push_descriptorset.cpp lava_lite.hpp controller.hpp
 	g++ $(CXXFLAGS) -o $@ $^ $(LDFLAGS) -lSOIL
 
+vc_specialize_constant : specialize_constant.cpp lava_lite.hpp controller.hpp
+	g++ $(CXXFLAGS) -o $@ $^ $(LDFLAGS) -lSOIL
+
 spv :
 	$(VK_SDK_PATH)/bin/glslangValidator -V single_attribute.vert -o single_attribute.vert.spv
 	$(VK_SDK_PATH)/bin/glslangValidator -V triple_attribute.vert -o triple_attribute.vert.spv
@@ -89,6 +93,7 @@ spv :
 	$(VK_SDK_PATH)/bin/glslangValidator -V quad_separate_sampler.frag -o quad_separate_sampler.frag.spv
 	$(VK_SDK_PATH)/bin/glslangValidator -V dual_attribute.vert -o dual_attribute.vert.spv
 	$(VK_SDK_PATH)/bin/glslangValidator -V quad_separate_sampler.vert -o quad_separate_sampler.vert.spv
+	$(VK_SDK_PATH)/bin/glslangValidator -V specialize_constant.frag -o specialize_constant.frag.spv
 
 clean:
 	rm -rf $(binary)
