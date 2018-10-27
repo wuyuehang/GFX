@@ -250,7 +250,8 @@ private:
         vector<const char *> ie = {
             VK_KHR_SURFACE_EXTENSION_NAME,
             VK_KHR_XCB_SURFACE_EXTENSION_NAME,
-            VK_EXT_DEBUG_REPORT_EXTENSION_NAME
+            VK_EXT_DEBUG_REPORT_EXTENSION_NAME,
+            VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME,
         };
 
         VkInstanceCreateInfo info {};
@@ -280,7 +281,8 @@ private:
         gfxQueueIndex = findQueueFamilyIndex(VK_QUEUE_GRAPHICS_BIT);
         nongfxQueueIndex = findQueueFamilyIndex(VK_QUEUE_COMPUTE_BIT | VK_QUEUE_TRANSFER_BIT);
         vector<const char *> de = {
-            VK_KHR_SWAPCHAIN_EXTENSION_NAME
+            VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+            VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME,
         };
 
         VkDeviceQueueCreateInfo queueInfo[2] {};

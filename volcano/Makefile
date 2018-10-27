@@ -23,7 +23,8 @@ binary = vc_logo \
 	ovc_logo \
 	ovc_secondary_command \
 	vc_camera_roam \
-	vc_object_spinner
+	vc_object_spinner \
+	vc_push_descriptorset
 
 all: $(binary)
 
@@ -67,6 +68,9 @@ vc_camera_roam : camera_roam.cpp lava_lite.hpp controller.hpp
 	g++ $(CXXFLAGS) -o $@ $^ $(LDFLAGS) -lSOIL
 
 vc_object_spinner : object_spinner.cpp lava_lite.hpp controller.hpp
+	g++ $(CXXFLAGS) -o $@ $^ $(LDFLAGS) -lSOIL
+
+vc_push_descriptorset : push_descriptorset.cpp lava_lite.hpp controller.hpp
 	g++ $(CXXFLAGS) -o $@ $^ $(LDFLAGS) -lSOIL
 
 spv :
