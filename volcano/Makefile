@@ -1,4 +1,4 @@
-VK_SDK_PATH = /home/vk/1.1.82.1/x86_64
+VK_SDK_PATH = /home/vk/1.1.85.0/x86_64
 GLFW3_PATH = /home/vk/glfw/build
 
 #CXXFLAGS = -g -std=c++11 -I$(VK_SDK_PATH)/include

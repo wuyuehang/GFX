@@ -557,7 +557,7 @@ public:
         VkDescriptorImageInfo descImgInfo = {
             .sampler = smp,
             .imageView = tx2d_imgv,
-            .imageLayout = VK_IMAGE_LAYOUT_GENERAL,
+            .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
         };
 
         VkWriteDescriptorSet wds = {
