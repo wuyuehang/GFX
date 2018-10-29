@@ -21,7 +21,6 @@ public:
             vkDestroyCommandPool(device, threadcmdpool[i], nullptr);
         }
 
-        vkDestroyDescriptorSetLayout(device, gfx_descset_layout, nullptr);
         vkDestroyPipelineLayout(device, gfx_pipeline_layout, nullptr);
         vkDestroyPipeline(device, gfx_pipeline, nullptr);
         vkDestroySemaphore(device, presentImgFinished, nullptr);
@@ -217,21 +216,12 @@ public:
             .primitiveRestartEnable = VK_FALSE,
         };
 
-        VkDescriptorSetLayoutCreateInfo dsLayoutInfo = {
-            .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
-            .pNext = nullptr,
-            .flags = 0,
-            .bindingCount = 0,
-            .pBindings = nullptr,
-        };
-        vkCreateDescriptorSetLayout(device, &dsLayoutInfo, nullptr, &gfx_descset_layout);
-
         VkPipelineLayoutCreateInfo layoutInfo = {
             .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
             .pNext = nullptr,
             .flags = 0,
-            .setLayoutCount = 1,
-            .pSetLayouts = &gfx_descset_layout,
+            .setLayoutCount = 0,
+            .pSetLayouts = nullptr,
             .pushConstantRangeCount = 0,
             .pPushConstantRanges = nullptr
         };
@@ -394,7 +384,6 @@ public:
 private:
     VkSemaphore presentImgFinished;
     VkSemaphore renderImgFinished;
-    VkDescriptorSetLayout gfx_descset_layout;
     VkPipelineLayout gfx_pipeline_layout;
     VkPipeline gfx_pipeline;
     VkCommandPool threadcmdpool[4];
