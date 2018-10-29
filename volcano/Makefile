@@ -26,7 +26,8 @@ binary = vc_logo \
 	vc_object_spinner \
 	vc_push_descriptorset \
 	vc_specialize_constant \
-	vc_threaded_commandbuf
+	vc_threaded_commandbuf \
+	vc_input_attachment
 
 all: $(binary)
 
@@ -81,6 +82,9 @@ vc_specialize_constant : specialize_constant.cpp lava_lite.hpp controller.hpp
 vc_threaded_commandbuf : threaded_commandbuf.cpp lava_lite.hpp controller.hpp
 	g++ $(CXXFLAGS) -o $@ $^ $(LDFLAGS) -lSOIL -lpthread
 
+vc_input_attachment : input_attachment.cpp lava_lite.hpp
+	g++ $(CXXFLAGS) -o $@ $^ $(LDFLAGS) -lSOIL
+
 spv :
 	$(VK_SDK_PATH)/bin/glslangValidator -V single_attribute.vert -o single_attribute.vert.spv
 	$(VK_SDK_PATH)/bin/glslangValidator -V triple_attribute.vert -o triple_attribute.vert.spv
@@ -99,6 +103,8 @@ spv :
 	$(VK_SDK_PATH)/bin/glslangValidator -V quad_separate_sampler.vert -o quad_separate_sampler.vert.spv
 	$(VK_SDK_PATH)/bin/glslangValidator -V specialize_constant.frag -o specialize_constant.frag.spv
 	$(VK_SDK_PATH)/bin/glslangValidator -V constant.frag -o constant.frag.spv
+	$(VK_SDK_PATH)/bin/glslangValidator -V input_attachment.vert -o input_attachment.vert.spv
+	$(VK_SDK_PATH)/bin/glslangValidator -V input_attachment.frag -o input_attachment.frag.spv
 
 clean:
 	rm -rf $(binary)
