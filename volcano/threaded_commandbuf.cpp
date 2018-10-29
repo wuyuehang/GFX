@@ -23,6 +23,10 @@ public:
 
         vkDestroyPipelineLayout(device, gfx_pipeline_layout, nullptr);
         vkDestroyPipeline(device, gfx_pipeline, nullptr);
+
+        for (auto & it : fence) {
+            vkDestroyFence(device, it, nullptr);
+        }
         vkDestroySemaphore(device, presentImgFinished, nullptr);
         vkDestroySemaphore(device, renderImgFinished, nullptr);
         for (const auto iter : fb) {
@@ -167,6 +171,16 @@ public:
 
         vkCreateSemaphore(device, &semaInfo, nullptr, &presentImgFinished);
         vkCreateSemaphore(device, &semaInfo, nullptr, &renderImgFinished);
+
+        fence.resize(swapchain_imgv.size());
+        for (uint32_t i = 0; i < swapchain_imgv.size(); i++) {
+            VkFenceCreateInfo fenceInfo = {
+                .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
+                .pNext = nullptr,
+                .flags = VK_FENCE_CREATE_SIGNALED_BIT,
+            };
+            vkCreateFence(device, &fenceInfo, nullptr, &fence[i]);
+        }
     }
 
     void initGFXPipeline() {
@@ -343,6 +357,8 @@ public:
             glfwPollEvents();
             vkAcquireNextImageKHR(device, swapchain, UINT64_MAX, presentImgFinished, VK_NULL_HANDLE, &ImageIndex);
 
+            vkWaitForFences(device, 1, &fence[ImageIndex], VK_TRUE, UINT64_MAX);
+            vkResetFences(device, 1, &fence[ImageIndex]);
             {
                 VkPipelineStageFlags ws[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
 
@@ -361,7 +377,7 @@ public:
                     .signalSemaphoreCount = 1,
                     .pSignalSemaphores = &renderImgFinished,
                 };
-                vkQueueSubmit(gfxQ, 1, &gfxSubmitInfo, VK_NULL_HANDLE);
+                vkQueueSubmit(gfxQ, 1, &gfxSubmitInfo, fence[ImageIndex]);
             }
 
             VkPresentInfoKHR pi = {
@@ -384,6 +400,7 @@ public:
 private:
     VkSemaphore presentImgFinished;
     VkSemaphore renderImgFinished;
+    vector<VkFence> fence;
     VkPipelineLayout gfx_pipeline_layout;
     VkPipeline gfx_pipeline;
     VkCommandPool threadcmdpool[4];
