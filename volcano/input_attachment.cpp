@@ -49,58 +49,57 @@ public:
     }
 
     void initRenderpass() {
-        VkAttachmentReference attRef[3] = {
-            [0] = {
-                .attachment = 0,
-                .layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-            },
-            [1] = {
-                .attachment = 1,
-                .layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-            },
-            [2] = {
-                .attachment = 2,
-                .layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-            }
+        array<VkAttachmentReference, 3> attRef = {};
+        attRef[0] = {
+            .attachment = 0,
+            .layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+        };
+        attRef[1] = {
+            .attachment = 1,
+            .layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+        };
+        attRef[2] = {
+            .attachment = 2,
+            .layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
         };
 
-        VkAttachmentDescription attDesc[3] = {
-            [0] = {
-                .flags = 0,
-                .format = surfacefmtkhr[0].format,
-                .samples = VK_SAMPLE_COUNT_1_BIT,
-                .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
-                .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
-                .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-                .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-                .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-                .finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-            },
-            [1] = {
-                .flags = 0,
-                .format = VK_FORMAT_D32_SFLOAT,
-                .samples = VK_SAMPLE_COUNT_1_BIT,
-                .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
-                .storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-                .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-                .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-                .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-                .finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-            },
-            [2] = {
-                .flags = 0,
-                .format = VK_FORMAT_R8G8B8A8_UNORM,
-                .samples = VK_SAMPLE_COUNT_1_BIT,
-                .loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-                .storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-                .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-                .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-                .initialLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                .finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-            }
+        array<VkAttachmentDescription, 3> attDesc {};
+        attDesc[0] = {
+            .flags = 0,
+            .format = surfacefmtkhr[0].format,
+            .samples = VK_SAMPLE_COUNT_1_BIT,
+            .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+            .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+            .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+            .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+            .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+            .finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+        };
+        attDesc[1] = {
+            .flags = 0,
+            .format = VK_FORMAT_D32_SFLOAT,
+            .samples = VK_SAMPLE_COUNT_1_BIT,
+            .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+            .storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+            .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+            .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+            .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+            .finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+        };
+        attDesc[2] = {
+            .flags = 0,
+            .format = VK_FORMAT_R8G8B8A8_UNORM,
+            .samples = VK_SAMPLE_COUNT_1_BIT,
+            .loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+            .storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+            .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+            .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+            .initialLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+            .finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
         };
 
-        VkSubpassDescription spDesc = {
+        array<VkSubpassDescription, 1> spDesc = {};
+        spDesc[0] = {
             .flags = 0,
             .pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
             .inputAttachmentCount = 1,
@@ -113,37 +112,36 @@ public:
             .pPreserveAttachments = nullptr,
         };
 
-        VkSubpassDependency subpassDep[] = {
-            [0] = {
-                .srcSubpass = VK_SUBPASS_EXTERNAL,
-                .dstSubpass = 0,
-                .srcStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
-                .dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                .srcAccessMask = VK_ACCESS_MEMORY_READ_BIT,
-                .dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-                .dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT,
-            },
-            [1] = {
-                .srcSubpass = 0,
-                .dstSubpass = VK_SUBPASS_EXTERNAL,
-                .srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                .dstStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
-                .srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-                .dstAccessMask = VK_ACCESS_MEMORY_READ_BIT,
-                .dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT,
-            },
+        array<VkSubpassDependency, 2> subpassDep = {};
+        subpassDep[0] = {
+            .srcSubpass = VK_SUBPASS_EXTERNAL,
+            .dstSubpass = 0,
+            .srcStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+            .dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+            .srcAccessMask = VK_ACCESS_MEMORY_READ_BIT,
+            .dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+            .dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT,
+        };
+        subpassDep[1] = {
+            .srcSubpass = 0,
+            .dstSubpass = VK_SUBPASS_EXTERNAL,
+            .srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+            .dstStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+            .srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+            .dstAccessMask = VK_ACCESS_MEMORY_READ_BIT,
+            .dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT,
         };
 
         VkRenderPassCreateInfo rpInfo = {
             .sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
             .pNext = nullptr,
             .flags = 0,
-            .attachmentCount = 3,
-            .pAttachments = attDesc,
-            .subpassCount = 1,
-            .pSubpasses = &spDesc,
-            .dependencyCount = 2,
-            .pDependencies = subpassDep,
+            .attachmentCount = attDesc.size(),
+            .pAttachments = attDesc.data(),
+            .subpassCount = spDesc.size(),
+            .pSubpasses = spDesc.data(),
+            .dependencyCount = subpassDep.size(),
+            .pDependencies = subpassDep.data(),
         };
         vkCreateRenderPass(device, &rpInfo, nullptr, &renderpass);
     }
@@ -190,7 +188,7 @@ public:
         VkShaderModule vertShaderModule = initShaderModule("input_attachment.vert.spv");
         VkShaderModule fragShaderModule = initShaderModule("input_attachment.frag.spv");
 
-        VkPipelineShaderStageCreateInfo shaderStageInfo[2] = {};
+        array<VkPipelineShaderStageCreateInfo, 2> shaderStageInfo = {};
         shaderStageInfo[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
         shaderStageInfo[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
         shaderStageInfo[0].module = vertShaderModule;
@@ -219,22 +217,21 @@ public:
             .primitiveRestartEnable = VK_FALSE,
         };
 
-        VkDescriptorSetLayoutBinding bindings[] = {
-            [0] = {
-                .binding = 0,
-                .descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,
-                .descriptorCount = 1,
-                .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
-                .pImmutableSamplers = nullptr,
-            },
+        array<VkDescriptorSetLayoutBinding, 1> bindings = {};
+        bindings[0] = {
+            .binding = 0,
+            .descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,
+            .descriptorCount = 1,
+            .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+            .pImmutableSamplers = nullptr,
         };
 
         VkDescriptorSetLayoutCreateInfo dsLayoutInfo = {
             .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
             .pNext = nullptr,
             .flags = 0,
-            .bindingCount = 1,
-            .pBindings = bindings
+            .bindingCount = bindings.size(),
+            .pBindings = bindings.data(),
         };
         vkCreateDescriptorSetLayout(device, &dsLayoutInfo, nullptr, &gfx_descset_layout);
 
@@ -253,8 +250,8 @@ public:
             .sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
             .pNext = nullptr,
             .flags = 0,
-            .stageCount = 2,
-            .pStages = shaderStageInfo,
+            .stageCount = shaderStageInfo.size(),
+            .pStages = shaderStageInfo.data(),
             .pVertexInputState = &vertInputInfo,
             .pInputAssemblyState = &iaInfo,
             .pTessellationState = nullptr,
@@ -276,11 +273,10 @@ public:
     }
 
     void initDescriptor() {
-        VkDescriptorPoolSize poolSize[] = {
-            [0] = {
-                .type = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,
-                .descriptorCount = 1,
-            },
+        array<VkDescriptorPoolSize, 1> poolSize = {};
+        poolSize[0] = {
+            .type = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,
+            .descriptorCount = 1,
         };
 
         VkDescriptorPoolCreateInfo poolInfo = {
@@ -288,8 +284,8 @@ public:
             .pNext = nullptr,
             .flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
             .maxSets = 1,
-            .poolSizeCount = 1,
-            .pPoolSizes = poolSize,
+            .poolSizeCount = poolSize.size(),
+            .pPoolSizes = poolSize.data(),
         };
         vkCreateDescriptorPool(device, &poolInfo, nullptr, &descpool);
 
@@ -302,30 +298,27 @@ public:
         };
         vkAllocateDescriptorSets(device, &ainfo, &gfx_descset);
 
-        /* Update DescriptorSets */
-        VkDescriptorImageInfo descImgInfo[] = {
-            [0] = {
-                .sampler = nullptr,
-                .imageView = srcTexObj.imgv,
-                .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-            },
+        array<VkDescriptorImageInfo, 1> descImgInfo = {};
+        descImgInfo[0] = {
+            .sampler = nullptr,
+            .imageView = srcTexObj.imgv,
+            .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
         };
 
-        VkWriteDescriptorSet wds[] = {
-            [0] = {
-                .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                .pNext = nullptr,
-                .dstSet = gfx_descset,
-                .dstBinding = 0,
-                .dstArrayElement = 0,
-                .descriptorCount = 1,
-                .descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,
-                .pImageInfo = &descImgInfo[0],
-                .pBufferInfo = nullptr,
-                .pTexelBufferView = nullptr,
-            },
+        array<VkWriteDescriptorSet, 1> wds = {};
+        wds[0] = {
+            .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+            .pNext = nullptr,
+            .dstSet = gfx_descset,
+            .dstBinding = 0,
+            .dstArrayElement = 0,
+            .descriptorCount = 1,
+            .descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,
+            .pImageInfo = &descImgInfo[0],
+            .pBufferInfo = nullptr,
+            .pTexelBufferView = nullptr,
         };
-        vkUpdateDescriptorSets(device, 1, wds, 0, nullptr);
+        vkUpdateDescriptorSets(device, wds.size(), wds.data(), 0, nullptr);
     }
 
     void initGFXCommand() {

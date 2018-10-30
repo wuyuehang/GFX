@@ -102,86 +102,69 @@ public:
     }
 
     void initRenderpass() {
-        VkAttachmentReference attRef[2] = {
-            [0] = {
-                .attachment = 0,
-                .layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-            },
-            [1] = {
-                .attachment = 1,
-                .layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-            }
-        };
+        array<VkAttachmentReference, 2> attRef {};
+        attRef[0].attachment = 0;
+        attRef[0].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        attRef[1].attachment = 1;
+        attRef[1].layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
-        VkAttachmentDescription attDesc[2] = {
-            [0] = {
-                .flags = 0,
-                .format = surfacefmtkhr[0].format,
-                .samples = VK_SAMPLE_COUNT_1_BIT,
-                .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
-                .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
-                .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-                .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-                .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-                .finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-            },
-            [1] = {
-                .flags = 0,
-                .format = VK_FORMAT_D32_SFLOAT,
-                .samples = VK_SAMPLE_COUNT_1_BIT,
-                .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
-                .storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-                .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-                .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-                .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-                .finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-            }
-        };
+        array<VkAttachmentDescription, 2> attDesc {};
+        attDesc[0].format = surfacefmtkhr[0].format;
+        attDesc[0].samples = VK_SAMPLE_COUNT_1_BIT;
+        attDesc[0].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+        attDesc[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+        attDesc[0].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+        attDesc[0].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        attDesc[0].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        attDesc[0].finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
-        VkSubpassDescription spDesc = {
-            .flags = 0,
-            .pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
-            .inputAttachmentCount = 0,
-            .pInputAttachments = nullptr,
-            .colorAttachmentCount = 1,
-            .pColorAttachments = &attRef[0],
-            .pResolveAttachments = nullptr,
-            .pDepthStencilAttachment = &attRef[1],
-            .preserveAttachmentCount = 0,
-            .pPreserveAttachments = nullptr,
-        };
+        attDesc[1].format = VK_FORMAT_D32_SFLOAT;
+        attDesc[1].samples = VK_SAMPLE_COUNT_1_BIT;
+        attDesc[1].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+        attDesc[1].storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        attDesc[1].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+        attDesc[1].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        attDesc[1].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        attDesc[1].finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
-        VkSubpassDependency subpassDep[] = {
-            [0] = {
-                .srcSubpass = VK_SUBPASS_EXTERNAL,
-                .dstSubpass = 0,
-                .srcStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
-                .dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                .srcAccessMask = VK_ACCESS_MEMORY_READ_BIT,
-                .dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-                .dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT,
-            },
-            [1] = {
-                .srcSubpass = 0,
-                .dstSubpass = VK_SUBPASS_EXTERNAL,
-                .srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                .dstStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
-                .srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-                .dstAccessMask = VK_ACCESS_MEMORY_READ_BIT,
-                .dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT,
-            },
-        };
+        array<VkSubpassDescription, 1> spDesc {};
+        spDesc[0].pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+        spDesc[0].inputAttachmentCount = 0;
+        spDesc[0].pInputAttachments = nullptr;
+        spDesc[0].colorAttachmentCount = 1;
+        spDesc[0].pColorAttachments = &attRef[0];
+        spDesc[0].pResolveAttachments = nullptr;
+        spDesc[0].pDepthStencilAttachment = &attRef[1];
+        spDesc[0].preserveAttachmentCount = 0;
+        spDesc[0].pPreserveAttachments = nullptr;
+
+        array<VkSubpassDependency, 2> subpassDep {};
+        subpassDep[0].srcSubpass = VK_SUBPASS_EXTERNAL;
+        subpassDep[0].dstSubpass = 0;
+        subpassDep[0].srcStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+        subpassDep[0].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+        subpassDep[0].srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+        subpassDep[0].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+        subpassDep[0].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+
+        subpassDep[1].srcSubpass = 0;
+        subpassDep[1].dstSubpass = VK_SUBPASS_EXTERNAL;
+        subpassDep[1].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+        subpassDep[1].dstStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+        subpassDep[1].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+        subpassDep[1].dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+        subpassDep[1].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
 
         VkRenderPassCreateInfo rpInfo = {
             .sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
             .pNext = nullptr,
             .flags = 0,
-            .attachmentCount = 2,
-            .pAttachments = attDesc,
-            .subpassCount = 1,
-            .pSubpasses = &spDesc,
-            .dependencyCount = 2,
-            .pDependencies = subpassDep,
+            .attachmentCount = attDesc.size(),
+            .pAttachments = attDesc.data(),
+            .subpassCount = spDesc.size(),
+            .pSubpasses = spDesc.data(),
+            .dependencyCount = subpassDep.size(),
+            .pDependencies = subpassDep.data(),
         };
         vkCreateRenderPass(device, &rpInfo, nullptr, &renderpass);
     }
@@ -219,7 +202,7 @@ public:
         VkShaderModule vertShaderModule = initShaderModule("quad_separate_sampler.vert.spv");
         VkShaderModule fragShaderModule = initShaderModule("quad_separate_sampler.frag.spv");
 
-        VkPipelineShaderStageCreateInfo shaderStageInfo[2] = {};
+        array<VkPipelineShaderStageCreateInfo, 2> shaderStageInfo = {};
         shaderStageInfo[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
         shaderStageInfo[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
         shaderStageInfo[0].module = vertShaderModule;
@@ -230,36 +213,29 @@ public:
         shaderStageInfo[1].module = fragShaderModule;
         shaderStageInfo[1].pName = "main";
 
-        /* graphics pipeline -- state */
-        VkVertexInputBindingDescription vibd = {
-            .binding = 0,
-            .stride = 4*sizeof(float),
-            .inputRate = VK_VERTEX_INPUT_RATE_VERTEX,
-        };
+        array<VkVertexInputBindingDescription, 1> vibd = {};
+        vibd[0].binding = 0;
+        vibd[0].stride = 4*sizeof(float);
+        vibd[0].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
-        VkVertexInputAttributeDescription viad[] = {
-            [0] = {
-                .location = 0,
-                .binding = 0,
-                .format = VK_FORMAT_R32G32_SFLOAT,
-                .offset = 0,
-            },
-            [1] = {
-                .location = 1,
-                .binding = 0,
-                .format = VK_FORMAT_R32G32_SFLOAT,
-                .offset = 2*sizeof(float),
-            },
-        };
+        array<VkVertexInputAttributeDescription, 2> viad = {};
+        viad[0].location = 0;
+        viad[0].binding = 0;
+        viad[0].format = VK_FORMAT_R32G32_SFLOAT;
+        viad[0].offset = 0;
+        viad[1].location = 1;
+        viad[1].binding = 0;
+        viad[1].format = VK_FORMAT_R32G32_SFLOAT;
+        viad[1].offset = 2*sizeof(float);
 
         VkPipelineVertexInputStateCreateInfo vertInputInfo = {
             .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
             .pNext = nullptr,
             .flags = 0,
-            .vertexBindingDescriptionCount = 1,
-            .pVertexBindingDescriptions = &vibd,
-            .vertexAttributeDescriptionCount = 2,
-            .pVertexAttributeDescriptions = viad,
+            .vertexBindingDescriptionCount = vibd.size(),
+            .pVertexBindingDescriptions = vibd.data(),
+            .vertexAttributeDescriptionCount = viad.size(),
+            .pVertexAttributeDescriptions = viad.data(),
         };
 
         VkPipelineInputAssemblyStateCreateInfo iaInfo = {
@@ -270,36 +246,35 @@ public:
             .primitiveRestartEnable = VK_FALSE,
         };
 
-        VkDescriptorSetLayoutBinding bindings[] = {
-            [0] = {
-                .binding = 0,
-                .descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,
-                .descriptorCount = 1,
-                .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
-                .pImmutableSamplers = nullptr,
-            },
-            [1] = {
-                .binding = 1,
-                .descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER,
-                .descriptorCount = 1,
-                .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
-                .pImmutableSamplers = nullptr
-            },
-            [2] = {
-                .binding = 2,
-                .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                .descriptorCount = 1,
-                .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
-                .pImmutableSamplers = nullptr,
-            }
+        array<VkDescriptorSetLayoutBinding, 3> bindings = {};
+        bindings[0] = {
+            .binding = 0,
+            .descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,
+            .descriptorCount = 1,
+            .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+            .pImmutableSamplers = nullptr,
+        };
+        bindings[1] = {
+            .binding = 1,
+            .descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER,
+            .descriptorCount = 1,
+            .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+            .pImmutableSamplers = nullptr
+        };
+        bindings[2] = {
+            .binding = 2,
+            .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+            .descriptorCount = 1,
+            .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
+            .pImmutableSamplers = nullptr,
         };
 
         VkDescriptorSetLayoutCreateInfo dsLayoutInfo = {
             .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
             .pNext = nullptr,
             .flags = VK_DESCRIPTOR_SET_LAYOUT_CREATE_PUSH_DESCRIPTOR_BIT_KHR,
-            .bindingCount = 3,
-            .pBindings = bindings
+            .bindingCount = bindings.size(),
+            .pBindings = bindings.data(),
         };
         vkCreateDescriptorSetLayout(device, &dsLayoutInfo, nullptr, &gfx_descset_layout);
 
@@ -318,8 +293,8 @@ public:
             .sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
             .pNext = nullptr,
             .flags = 0,
-            .stageCount = 2,
-            .pStages = shaderStageInfo,
+            .stageCount = shaderStageInfo.size(),
+            .pStages = shaderStageInfo.data(),
             .pVertexInputState = &vertInputInfo,
             .pInputAssemblyState = &iaInfo,
             .pTessellationState = nullptr,
@@ -365,68 +340,67 @@ public:
             vkCmdBindPipeline(cmdbuf[i], VK_PIPELINE_BIND_POINT_GRAPHICS, gfx_pipeline);
 
             {
-                VkDescriptorImageInfo descImgInfo[] = {
-                    [0] = {
-                        .sampler = nullptr,
-                        .imageView = srcTexObj.imgv,
-                        .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                    },
-                    [1] = {
-                        .sampler = smp,
-                        .imageView = nullptr,
-                        .imageLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-                    }
+                array<VkDescriptorImageInfo, 1> descImgInfo = {};
+                descImgInfo[0] = {
+                    .sampler = nullptr,
+                    .imageView = srcTexObj.imgv,
+                    .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                };
+                descImgInfo[1] = {
+                    .sampler = smp,
+                    .imageView = nullptr,
+                    .imageLayout = VK_IMAGE_LAYOUT_UNDEFINED,
                 };
 
-                VkDescriptorBufferInfo descUniInfo = {
+                array<VkDescriptorBufferInfo, 1> descUniInfo = {};
+                descUniInfo[0] = {
                     .buffer = resource_manager.queryBuf("uniformbuf"),
                     .offset = 0,
                     .range = sizeof(glm::mat4),
                 };
 
-                VkWriteDescriptorSet wds[] = {
-                    [0] = {
-                        .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                        .pNext = nullptr,
-                        .dstSet = VK_NULL_HANDLE,
-                        .dstBinding = 0,
-                        .dstArrayElement = 0,
-                        .descriptorCount = 1,
-                        .descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,
-                        .pImageInfo = &descImgInfo[0],
-                        .pBufferInfo = nullptr,
-                        .pTexelBufferView = nullptr,
-                    },
-                    [1] = {
-                        .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                        .pNext = nullptr,
-                        .dstSet = VK_NULL_HANDLE,
-                        .dstBinding = 1,
-                        .dstArrayElement = 0,
-                        .descriptorCount = 1,
-                        .descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER,
-                        .pImageInfo = &descImgInfo[1],
-                        .pBufferInfo = nullptr,
-                        .pTexelBufferView = nullptr,
-                    },
-                    [2] = {
-                        .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                        .pNext = nullptr,
-                        .dstSet = VK_NULL_HANDLE,
-                        .dstBinding = 2,
-                        .dstArrayElement = 0,
-                        .descriptorCount = 1,
-                        .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                        .pImageInfo = nullptr,
-                        .pBufferInfo = &descUniInfo,
-                        .pTexelBufferView = nullptr,
-                    },
+                array<VkWriteDescriptorSet, 3> wds = {};
+                wds[0] = {
+                    .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                    .pNext = nullptr,
+                    .dstSet = VK_NULL_HANDLE,
+                    .dstBinding = 0,
+                    .dstArrayElement = 0,
+                    .descriptorCount = 1,
+                    .descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,
+                    .pImageInfo = &descImgInfo[0],
+                    .pBufferInfo = nullptr,
+                    .pTexelBufferView = nullptr,
+                };
+                wds[1] = {
+                    .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                    .pNext = nullptr,
+                    .dstSet = VK_NULL_HANDLE,
+                    .dstBinding = 1,
+                    .dstArrayElement = 0,
+                    .descriptorCount = 1,
+                    .descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER,
+                    .pImageInfo = &descImgInfo[1],
+                    .pBufferInfo = nullptr,
+                    .pTexelBufferView = nullptr,
+                };
+                wds[2] = {
+                    .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                    .pNext = nullptr,
+                    .dstSet = VK_NULL_HANDLE,
+                    .dstBinding = 2,
+                    .dstArrayElement = 0,
+                    .descriptorCount = 1,
+                    .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                    .pImageInfo = nullptr,
+                    .pBufferInfo = &descUniInfo[0],
+                    .pTexelBufferView = nullptr,
                 };
 
                 PFN_vkCmdPushDescriptorSetKHR fp_vkCmdPushDescriptorSetKHR =
                     (PFN_vkCmdPushDescriptorSetKHR)vkGetDeviceProcAddr(device, "vkCmdPushDescriptorSetKHR");
                 fp_vkCmdPushDescriptorSetKHR(cmdbuf[i], VK_PIPELINE_BIND_POINT_GRAPHICS,
-                    gfx_pipeline_layout, 0, 3, wds);
+                    gfx_pipeline_layout, 0, wds.size(), wds.data());
             }
 
             VkDeviceSize offset = {};

@@ -4,6 +4,7 @@
 #define VK_USE_PLATFORM_XCB_KHR
 #include <vulkan/vulkan.h>
 #include <GLFW/glfw3.h>
+#include <array>
 #include <cassert>
 #include <cstring>
 #include <fstream>
@@ -13,6 +14,7 @@
 
 #include "resource_mgnt.hpp"
 
+using std::array;
 using std::cout;
 using std::endl;
 using std::ifstream;
