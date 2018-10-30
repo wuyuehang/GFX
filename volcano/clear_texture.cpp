@@ -17,7 +17,7 @@ public:
         vkDestroyRenderPass(device, renderpass, nullptr);
         vkDestroySampler(device, smp, nullptr);
         vkDestroyImageView(device, texObj.imgv, nullptr);
-        vkFreeMemory(device, texObj.mem, nullptr);
+        vkFreeMemory(device, texObj.memory, nullptr);
         vkDestroyImage(device, texObj.img, nullptr);
         resource_manager.freeBuf(device);
     }
@@ -34,12 +34,6 @@ public:
         initGFXCommand();
     }
 
-    struct TexObj {
-        VkImage img;
-        VkImageView imgv;
-        VkDeviceMemory mem;
-    };
-
     void initBuffer() {
         float vertex_data[] = {
             -1.0, 1.0, 0.0, 1.0,
@@ -54,44 +48,9 @@ public:
     }
 
     void initTexture() {
-        VkImageCreateInfo imgInfo {};
-        imgInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-        imgInfo.imageType = VK_IMAGE_TYPE_2D;
-        imgInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
-        imgInfo.extent.width = surfacecapkhr.currentExtent.width;
-        imgInfo.extent.height = surfacecapkhr.currentExtent.height;
-        imgInfo.extent.depth = 1;
-        imgInfo.mipLevels = 1;
-        imgInfo.arrayLayers = 1;
-        imgInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-        imgInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-        imgInfo.usage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-        imgInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-        imgInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        vkCreateImage(device, &imgInfo, nullptr, &texObj.img);
-
-        VkMemoryRequirements req = {};
-        vkGetImageMemoryRequirements(device, texObj.img, &req);
-
-        VkMemoryAllocateInfo allocInfo {};
-        allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-        allocInfo.allocationSize = req.size;
-        allocInfo.memoryTypeIndex = resource_manager.findProperties(&pdmp, req.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-        vkAllocateMemory(device, &allocInfo, nullptr, &texObj.mem);
-
-        vkBindImageMemory(device, texObj.img, texObj.mem, 0);
-
-        VkImageViewCreateInfo imgViewInfo {};
-        imgViewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-        imgViewInfo.image = texObj.img;
-        imgViewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-        imgViewInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
-        imgViewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        imgViewInfo.subresourceRange.baseMipLevel = 0;
-        imgViewInfo.subresourceRange.levelCount = 1;
-        imgViewInfo.subresourceRange.baseArrayLayer = 0;
-        imgViewInfo.subresourceRange.layerCount = 1;
-        vkCreateImageView(device, &imgViewInfo, nullptr, &texObj.imgv);
+        bakeImage(texObj, VK_FORMAT_R8G8B8A8_UNORM, surfacecapkhr.currentExtent.width,
+            surfacecapkhr.currentExtent.height, VK_IMAGE_TILING_OPTIMAL,
+            VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, nullptr);
 
         preTransitionImgLayout(texObj.img, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
             VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
@@ -513,7 +472,7 @@ public:
     }
 
 private:
-    TexObj texObj;
+    TexObj texObj {};
     VkSampler smp;
     VkSemaphore swapImgAcquire;
     VkSemaphore renderImgFinished;

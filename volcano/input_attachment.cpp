@@ -20,7 +20,7 @@ public:
         }
         vkDestroyRenderPass(device, renderpass, nullptr);
         vkDestroyImageView(device, srcTexObj.imgv, nullptr);
-        vkFreeMemory(device, srcTexObj.mem, nullptr);
+        vkFreeMemory(device, srcTexObj.memory, nullptr);
         vkDestroyImage(device, srcTexObj.img, nullptr);
         resource_manager.freeBuf(device);
     }
@@ -35,75 +35,17 @@ public:
         initGFXCommand();
     }
 
-    struct TexObj {
-        VkImage img;
-        VkImageView imgv;
-        VkDeviceMemory mem;
-    };
-
     void initTexture() {
-        VkImageCreateInfo imgInfo {};
-        imgInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-        imgInfo.imageType = VK_IMAGE_TYPE_2D;
-        imgInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
-        imgInfo.extent.width = surfacecapkhr.currentExtent.width;
-        imgInfo.extent.height = surfacecapkhr.currentExtent.height;
-        imgInfo.extent.depth = 1;
-        imgInfo.mipLevels = 1;
-        imgInfo.arrayLayers = 1;
-        imgInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-        imgInfo.tiling = VK_IMAGE_TILING_LINEAR;
-        imgInfo.usage = VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
-        imgInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-        imgInfo.initialLayout = VK_IMAGE_LAYOUT_PREINITIALIZED;
-        vkCreateImage(device, &imgInfo, nullptr, &srcTexObj.img);
-
-        VkMemoryRequirements req = {};
-        vkGetImageMemoryRequirements(device, srcTexObj.img, &req);
-
-        VkMemoryAllocateInfo allocInfo {};
-        allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-        allocInfo.allocationSize = req.size;
-        allocInfo.memoryTypeIndex = resource_manager.findProperties(&pdmp, req.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-        vkAllocateMemory(device, &allocInfo, nullptr, &srcTexObj.mem);
-
-        vkBindImageMemory(device, srcTexObj.img, srcTexObj.mem, 0);
-
         int width, height;
         uint8_t *img = SOIL_load_image("ReneDescartes.jpeg", &width, &height, 0, SOIL_LOAD_RGBA);
-        VkImageSubresource subresource = {
-            .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-            .mipLevel = 0,
-            .arrayLayer = 0,
-        };
-        VkSubresourceLayout subresource_layout = {};
-        vkGetImageSubresourceLayout(device, srcTexObj.img, &subresource, &subresource_layout);
 
-        uint8_t *pDST = nullptr;
-
-        vkMapMemory(device, srcTexObj.mem, 0, req.size, 0, (void **)&pDST);
-        for (int i = 0; i < height; i++) {
-            memcpy(pDST, (img + width * i * 4), width * 4);
-            pDST = pDST + subresource_layout.rowPitch;
-        }
-        vkUnmapMemory(device, srcTexObj.mem);
+        bakeImage(srcTexObj, VK_FORMAT_R8G8B8A8_UNORM, width, height, VK_IMAGE_TILING_LINEAR,
+            VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT, img);
 
         SOIL_free_image_data(img);
 
         preTransitionImgLayout(srcTexObj.img, VK_IMAGE_LAYOUT_PREINITIALIZED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
             VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
-
-        VkImageViewCreateInfo imgViewInfo {};
-        imgViewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-        imgViewInfo.image = srcTexObj.img;
-        imgViewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-        imgViewInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
-        imgViewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        imgViewInfo.subresourceRange.baseMipLevel = 0;
-        imgViewInfo.subresourceRange.levelCount = 1;
-        imgViewInfo.subresourceRange.baseArrayLayer = 0;
-        imgViewInfo.subresourceRange.layerCount = 1;
-        vkCreateImageView(device, &imgViewInfo, nullptr, &srcTexObj.imgv);
     }
 
     void initRenderpass() {
@@ -470,7 +412,7 @@ public:
     }
 
 private:
-    TexObj srcTexObj;
+    TexObj srcTexObj {};
     VkSemaphore swapImgAcquire;
     VkSemaphore renderImgFinished;
     vector<VkFence> fence;

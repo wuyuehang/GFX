@@ -30,6 +30,12 @@ vector<char> loadSPIRV(const string& filename) {
     return buffer;
 }
 
+struct TexObj {
+    VkImage img;
+    VkDeviceMemory memory;
+    VkImageView imgv;
+};
+
 struct PSOTemplate {
     /* fixed function pipeline */
     VkPipelineViewportStateCreateInfo vpsInfo {};
@@ -90,6 +96,83 @@ public:
         vkCreateShaderModule(device, &info, nullptr, &module);
 
         return module;
+    }
+
+    void bakeImage(struct TexObj &texo, VkFormat fmt, uint32_t w, uint32_t h,
+        VkImageTiling tiling, VkImageUsageFlags usage, const void *pData) {
+
+        assert(texo.img == VK_NULL_HANDLE);
+        assert(texo.imgv == VK_NULL_HANDLE);
+        assert(texo.memory == VK_NULL_HANDLE);
+
+        VkImageCreateInfo imgInfo {};
+        imgInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+        imgInfo.imageType = VK_IMAGE_TYPE_2D;
+        imgInfo.format = fmt;
+        imgInfo.extent.width = w;
+        imgInfo.extent.height = h;
+        imgInfo.extent.depth = 1;
+        imgInfo.mipLevels = 1;
+        imgInfo.arrayLayers = 1;
+        imgInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+        imgInfo.tiling = tiling;
+        imgInfo.usage = usage;
+        imgInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+        if (pData != nullptr) {
+            imgInfo.initialLayout = VK_IMAGE_LAYOUT_PREINITIALIZED;
+        } else {
+            imgInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        }
+        vkCreateImage(device, &imgInfo, nullptr, &texo.img);
+
+        VkMemoryRequirements req = {};
+        vkGetImageMemoryRequirements(device, texo.img, &req);
+
+        VkMemoryAllocateInfo allocInfo {};
+        allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+        allocInfo.allocationSize = req.size;
+        allocInfo.memoryTypeIndex = resource_manager.findProperties(&pdmp, req.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+        vkAllocateMemory(device, &allocInfo, nullptr, &texo.memory);
+
+        vkBindImageMemory(device, texo.img, texo.memory, 0);
+
+        /* upload content */
+        if (pData != nullptr) {
+            VkImageSubresource subresource = {
+                .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                .mipLevel = 0,
+                .arrayLayer = 0,
+            };
+
+            VkSubresourceLayout subresource_layout = {};
+            vkGetImageSubresourceLayout(device, texo.img, &subresource, &subresource_layout);
+
+            uint8_t *pDST = nullptr;
+
+            vkMapMemory(device, texo.memory, 0, req.size, 0, (void **)&pDST);
+            for (uint32_t i = 0; i < h; i++) {
+                memcpy(pDST, ((uint8_t *)pData + w * i * 4), w * 4);
+                pDST = pDST + subresource_layout.rowPitch;
+            }
+            vkUnmapMemory(device, texo.memory);
+        }
+
+        VkImageUsageFlags combine = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
+            | VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
+        if (usage & combine) {
+            VkImageViewCreateInfo imgViewInfo {};
+            imgViewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+            imgViewInfo.image = texo.img;
+            imgViewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+            imgViewInfo.format = fmt;
+            imgViewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+            imgViewInfo.subresourceRange.baseMipLevel = 0;
+            imgViewInfo.subresourceRange.levelCount = 1;
+            imgViewInfo.subresourceRange.baseArrayLayer = 0;
+            imgViewInfo.subresourceRange.layerCount = 1;
+            vkCreateImageView(device, &imgViewInfo, nullptr, &texo.imgv);
+        }
     }
 
     void preTransitionImgLayout(VkImage img, VkImageLayout ol, VkImageLayout nl,

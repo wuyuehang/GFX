@@ -24,12 +24,12 @@ public:
         }
         vkDestroyRenderPass(device, renderpass, nullptr);
 
-        vkDestroyImageView(device, src_imgv, nullptr);
-        vkDestroyImageView(device, dst_imgv, nullptr);
-        vkFreeMemory(device, src_mem, nullptr);
-        vkFreeMemory(device, dst_mem, nullptr);
-        vkDestroyImage(device, src_img, nullptr);
-        vkDestroyImage(device, dst_img, nullptr);
+        vkDestroyImageView(device, srcTexObj.imgv, nullptr);
+        vkDestroyImageView(device, dstTexObj.imgv, nullptr);
+        vkFreeMemory(device, srcTexObj.memory, nullptr);
+        vkFreeMemory(device, dstTexObj.memory, nullptr);
+        vkDestroyImage(device, srcTexObj.img, nullptr);
+        vkDestroyImage(device, dstTexObj.img, nullptr);
 
         vkDestroySampler(device, smp, nullptr);
         resource_manager.freeBuf(device);
@@ -92,92 +92,18 @@ public:
         int width, height;
         uint8_t *img = SOIL_load_image("ReneDescartes.jpeg", &width, &height, 0, SOIL_LOAD_RGBA);
 
-        /* create src image */
-        VkImageCreateInfo info {};
-        info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-        info.imageType = VK_IMAGE_TYPE_2D;
-        info.format = VK_FORMAT_R8G8B8A8_UNORM;
-        info.extent = {
-                .width = (uint32_t) width,
-                .height = (uint32_t) height,
-                .depth = 1
-            };
-        info.mipLevels = 1;
-        info.arrayLayers = 1;
-        info.samples = VK_SAMPLE_COUNT_1_BIT;
-        info.tiling = VK_IMAGE_TILING_LINEAR;
-        info.usage = VK_IMAGE_USAGE_STORAGE_BIT;
-        info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-        info.initialLayout = VK_IMAGE_LAYOUT_PREINITIALIZED;
-
-        vkCreateImage(device, &info, nullptr, &src_img);
-
-        VkMemoryRequirements req = {};
-        vkGetImageMemoryRequirements(device, src_img, &req);
-
-        VkMemoryAllocateInfo allocInfo {};
-        allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-        allocInfo.allocationSize = req.size;
-        allocInfo.memoryTypeIndex = resource_manager.findProperties(&pdmp, req.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-
-        vkAllocateMemory(device, &allocInfo, nullptr, &src_mem);
-
-        vkBindImageMemory(device, src_img, src_mem, 0);
-
-        /* create dst image */
-        info.usage = VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-        info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-
-        vkCreateImage(device, &info, nullptr, &dst_img);
-
-        vkAllocateMemory(device, &allocInfo, nullptr, &dst_mem);
-
-        vkBindImageMemory(device, dst_img, dst_mem, 0);
-
-        /* create src image view */
-        VkImageViewCreateInfo vi {};
-        vi.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-        vi.image = src_img;
-        vi.viewType = VK_IMAGE_VIEW_TYPE_2D;
-        vi.format = VK_FORMAT_R8G8B8A8_UNORM;
-        vi.subresourceRange = {
-                .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-                .baseMipLevel = 0,
-                .levelCount = 1,
-                .baseArrayLayer = 0,
-                .layerCount = 1,
-            };
-        vkCreateImageView(device, &vi, nullptr, &src_imgv);
-
-        vi.image = dst_img;
-        vkCreateImageView(device, &vi, nullptr, &dst_imgv);
-
-        /* upload data into src image */
-        VkImageSubresource subresource = {
-            .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-            .mipLevel = 0,
-            .arrayLayer = 0,
-        };
-
-        VkSubresourceLayout subresource_layout = {};
-        vkGetImageSubresourceLayout(device, src_img, &subresource, &subresource_layout);
-
-        uint8_t *pDST = nullptr;
-
-        vkMapMemory(device, src_mem, 0, req.size, 0, (void **)&pDST);
-        for (int i = 0; i < height; i++) {
-            memcpy(pDST, (img + width * i * 4), width * 4);
-            pDST = pDST + subresource_layout.rowPitch;
-        }
-        vkUnmapMemory(device, src_mem);
+        bakeImage(srcTexObj, VK_FORMAT_R8G8B8A8_UNORM, width, height, VK_IMAGE_TILING_LINEAR,
+            VK_IMAGE_USAGE_STORAGE_BIT, img);
 
         SOIL_free_image_data(img);
 
-        /* transition image layout */
-        preTransitionImgLayout(src_img, VK_IMAGE_LAYOUT_PREINITIALIZED, VK_IMAGE_LAYOUT_GENERAL,
+        bakeImage(dstTexObj, VK_FORMAT_R8G8B8A8_UNORM, width, height, VK_IMAGE_TILING_LINEAR,
+            VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, nullptr);
+
+        preTransitionImgLayout(srcTexObj.img, VK_IMAGE_LAYOUT_PREINITIALIZED, VK_IMAGE_LAYOUT_GENERAL,
             VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
 
-        preTransitionImgLayout(dst_img, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+        preTransitionImgLayout(dstTexObj.img, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
             VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
     }
 
@@ -499,17 +425,17 @@ public:
         VkDescriptorImageInfo descImgInfo[] = {
             [0] = {
                 .sampler = nullptr,
-                .imageView = src_imgv,
+                .imageView = srcTexObj.imgv,
                 .imageLayout = VK_IMAGE_LAYOUT_GENERAL,
             },
             [1] = {
                 .sampler = nullptr,
-                .imageView = dst_imgv,
+                .imageView = dstTexObj.imgv,
                 .imageLayout = VK_IMAGE_LAYOUT_GENERAL,
             },
             [2] = {
                 .sampler = smp,
-                .imageView = dst_imgv,
+                .imageView = dstTexObj.imgv,
                 .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
             }
         };
@@ -574,7 +500,7 @@ public:
                     .newLayout = VK_IMAGE_LAYOUT_GENERAL,
                     .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
                     .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                    .image = dst_img,
+                    .image = dstTexObj.img,
                     .subresourceRange = {
                         .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
                         .baseMipLevel = 0,
@@ -602,7 +528,7 @@ public:
                     .newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                     .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
                     .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                    .image = dst_img,
+                    .image = dstTexObj.img,
                     .subresourceRange = {
                         .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
                         .baseMipLevel = 0,
@@ -725,12 +651,8 @@ public:
 
 public:
     VkSampler smp;
-    VkImage src_img;
-    VkImage dst_img;
-    VkDeviceMemory src_mem;
-    VkDeviceMemory dst_mem;
-    VkImageView src_imgv;
-    VkImageView dst_imgv;
+    struct TexObj srcTexObj {};
+    struct TexObj dstTexObj {};
     /* sync between presentation engine and start of command execution */
     VkSemaphore swapImgAcquire;
     /* sync between finish of command execution and present request to presentation engine */
