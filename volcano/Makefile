@@ -27,7 +27,8 @@ binary = vc_logo \
 	vc_push_descriptorset \
 	vc_specialize_constant \
 	vc_threaded_commandbuf \
-	vc_input_attachment
+	vc_input_attachment \
+	vc_subpass
 
 all: $(binary)
 
@@ -83,6 +84,9 @@ vc_threaded_commandbuf : threaded_commandbuf.cpp lava_lite.hpp controller.hpp
 	g++ $(CXXFLAGS) -o $@ $^ $(LDFLAGS) -lSOIL -lpthread
 
 vc_input_attachment : input_attachment.cpp lava_lite.hpp
+	g++ $(CXXFLAGS) -o $@ $^ $(LDFLAGS) -lSOIL
+
+vc_subpass : subpass.cpp lava_lite.hpp
 	g++ $(CXXFLAGS) -o $@ $^ $(LDFLAGS) -lSOIL
 
 spv :

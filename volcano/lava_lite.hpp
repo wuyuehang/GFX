@@ -230,6 +230,9 @@ public:
             case VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL:
                 imb.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
                 break;
+            case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:
+                imb.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+                break;
             default:
                 assert(0);
         }
@@ -291,6 +294,12 @@ public:
             case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL:
                 imb.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
                 break;
+            case VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL:
+                imb.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+                break;
+            case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:
+                imb.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+                break;
             default:
                 assert(0);
         }
@@ -307,6 +316,9 @@ public:
                 break;
             case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL:
                 imb.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+                break;
+            case VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL:
+                imb.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
                 break;
             default:
                 assert(0);
