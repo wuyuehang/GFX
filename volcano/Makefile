@@ -29,7 +29,8 @@ binary = vc_logo \
 	vc_threaded_commandbuf \
 	vc_input_attachment \
 	vc_subpass \
-	vc_subpass2
+	vc_subpass2 \
+	vc_subpass3
 
 all: $(binary)
 
@@ -93,6 +94,9 @@ vc_subpass : subpass.cpp lava_lite.hpp
 vc_subpass2 : subpass2.cpp lava_lite.hpp
 	g++ $(CXXFLAGS) -o $@ $^ $(LDFLAGS) -lSOIL
 
+vc_subpass3 : subpass3.cpp lava_lite.hpp
+	g++ $(CXXFLAGS) -o $@ $^ $(LDFLAGS) -lSOIL
+
 spv :
 	$(VK_SDK_PATH)/bin/glslangValidator -V single_attribute.vert -o single_attribute.vert.spv
 	$(VK_SDK_PATH)/bin/glslangValidator -V triple_attribute.vert -o triple_attribute.vert.spv
@@ -114,6 +118,7 @@ spv :
 	$(VK_SDK_PATH)/bin/glslangValidator -V input_attachment.vert -o input_attachment.vert.spv
 	$(VK_SDK_PATH)/bin/glslangValidator -V input_attachment.frag -o input_attachment.frag.spv
 	$(VK_SDK_PATH)/bin/glslangValidator -V subpass2.frag -o subpass2.frag.spv
+	$(VK_SDK_PATH)/bin/glslangValidator -V subpass3.frag -o subpass3.frag.spv
 
 clean:
 	rm -rf $(binary)
