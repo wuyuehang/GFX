@@ -66,6 +66,12 @@ public:
             vkDestroyImageView(device, iter, nullptr);
         }
 
+        for (auto & it : fence) {
+            vkDestroyFence(device, it, nullptr);
+        }
+        vkDestroySemaphore(device, presentImgFinished, nullptr);
+        vkDestroySemaphore(device, renderImgFinished, nullptr);
+
         vkDestroySwapchainKHR(device, swapchain, nullptr);
         vkDestroySurfaceKHR(instance, surface, nullptr);
         vkDestroyDevice(device, nullptr);
@@ -81,6 +87,7 @@ public:
         initDevice();
         initWSI();
         initSwapchain();
+        initSync();
         initCmdBuf();
         initDepth();
         initPSOTemplate();
@@ -332,6 +339,54 @@ public:
             1, &imb);
     }
 
+    virtual void drawFrame() {};
+    virtual void run() {
+        glfwShowWindow(glfw);
+        uint32_t ImageIndex = 0;
+        while (!glfwWindowShouldClose(glfw)) {
+            glfwPollEvents();
+            vkAcquireNextImageKHR(device, swapchain, UINT64_MAX, presentImgFinished, VK_NULL_HANDLE, &ImageIndex);
+
+            vkWaitForFences(device, 1, &fence[ImageIndex], VK_TRUE, UINT64_MAX);
+            vkResetFences(device, 1, &fence[ImageIndex]);
+            {
+                drawFrame();
+                VkPipelineStageFlags ws[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+
+                VkSubmitInfo gfxSubmitInfo = {
+                    .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+                    /* stages prior to output color stage can already process while output color stage must
+                    * wait until presentImgFinished semaphore is signaled.
+                    */
+                    .pNext = nullptr,
+                    .waitSemaphoreCount = 1,
+                    .pWaitSemaphores = &presentImgFinished,
+                    .pWaitDstStageMask = ws,
+                    .commandBufferCount = 1,
+                    .pCommandBuffers = &cmdbuf[ImageIndex],
+                    /* signal finish of render process, status from unsignaled to signaled */
+                    .signalSemaphoreCount = 1,
+                    .pSignalSemaphores = &renderImgFinished,
+                };
+                vkQueueSubmit(gfxQ, 1, &gfxSubmitInfo, fence[ImageIndex]);
+            }
+
+            VkPresentInfoKHR pi = {
+                .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
+                .pNext = nullptr,
+                /* presentation engine can only start present image until the render executions onto the
+                 * image have been finished (_renderImgFinished semaphore signaled)
+                 */
+                .waitSemaphoreCount = 1,
+                .pWaitSemaphores = &renderImgFinished,
+                .swapchainCount = 1,
+                .pSwapchains = &swapchain,
+                .pImageIndices = &ImageIndex,
+                .pResults = nullptr
+            };
+            vkQueuePresentKHR(gfxQ, &pi);
+        }
+    }
 private:
     uint32_t findQueueFamilyIndex(VkQueueFlags desire) {
         for (uint32_t i = 0; i < queueFamily.size(); i++) {
@@ -470,6 +525,24 @@ private:
                 };
 
             vkCreateImageView(device, &info, nullptr, &swapchain_imgv[i]);
+        }
+    }
+
+    void initSync() {
+        VkSemaphoreCreateInfo semaInfo {};
+        semaInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+        vkCreateSemaphore(device, &semaInfo, nullptr, &presentImgFinished);
+        vkCreateSemaphore(device, &semaInfo, nullptr, &renderImgFinished);
+
+        fence.resize(swapchain_imgv.size());
+        for (uint32_t i = 0; i < swapchain_imgv.size(); i++) {
+            VkFenceCreateInfo fenceInfo = {
+                .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
+                .pNext = nullptr,
+                .flags = VK_FENCE_CREATE_SIGNALED_BIT,
+            };
+            vkCreateFence(device, &fenceInfo, nullptr, &fence[i]);
         }
     }
 
@@ -664,6 +737,9 @@ private:
     VkImage depth_img;
     VkDeviceMemory depth_mem;
     VkCommandPool cmdpool;
+    VkSemaphore presentImgFinished;
+    VkSemaphore renderImgFinished;
+    vector<VkFence> fence;
 };
 
 #endif

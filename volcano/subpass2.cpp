@@ -16,8 +16,6 @@ public:
         vkDestroyDescriptorSetLayout(device, sp0sp1_descset_layout, nullptr);
         vkDestroyPipelineLayout(device, sp0sp1_pipeline_layout, nullptr);
 
-        vkDestroySemaphore(device, presentImgFinished, nullptr);
-        vkDestroySemaphore(device, renderImgFinished, nullptr);
         for (const auto iter : fb) {
             vkDestroyFramebuffer(device, iter, nullptr);
         }
@@ -44,50 +42,10 @@ public:
         initSampler();
         initRenderpass();
         initFramebuffer();
-        initSync();
         initDescriptorSetLayout();
         initGFXPipeline();
         initDescriptor();
         initGFXCommand();
-    }
-
-    void run() {
-        glfwShowWindow(glfw);
-        uint32_t ImageIndex = 0;
-        while (!glfwWindowShouldClose(glfw)) {
-            glfwPollEvents();
-
-            vkAcquireNextImageKHR(device, swapchain, UINT64_MAX, presentImgFinished, VK_NULL_HANDLE, &ImageIndex);
-
-            {
-                VkPipelineStageFlags ws[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
-
-                VkSubmitInfo gfxSubmitInfo = {
-                    .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-                    .pNext = nullptr,
-                    .waitSemaphoreCount = 1,
-                    .pWaitSemaphores = &presentImgFinished,
-                    .pWaitDstStageMask = ws,
-                    .commandBufferCount = 1,
-                    .pCommandBuffers = &cmdbuf[ImageIndex],
-                    .signalSemaphoreCount = 1,
-                    .pSignalSemaphores = &renderImgFinished,
-                };
-                vkQueueSubmit(gfxQ, 1, &gfxSubmitInfo, VK_NULL_HANDLE);
-            }
-
-            VkPresentInfoKHR pi = {
-                .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
-                .pNext = nullptr,
-                .waitSemaphoreCount = 1,
-                .pWaitSemaphores = &renderImgFinished,
-                .swapchainCount = 1,
-                .pSwapchains = &swapchain,
-                .pImageIndices = &ImageIndex,
-                .pResults = nullptr
-            };
-            vkQueuePresentKHR(gfxQ, &pi);
-        }
     }
 
     void initBuffer() {
@@ -336,14 +294,6 @@ public:
             };
             vkCreateFramebuffer(device, &info, nullptr, &fb[i]);
         }
-    }
-
-    void initSync() {
-        VkSemaphoreCreateInfo semaInfo {};
-        semaInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-
-        vkCreateSemaphore(device, &semaInfo, nullptr, &presentImgFinished);
-        vkCreateSemaphore(device, &semaInfo, nullptr, &renderImgFinished);
     }
 
     void initDescriptorSetLayout() {
@@ -718,8 +668,6 @@ public:
     TexObj fogsmoke {};
     array<TexObj, SPMAX> RT {};
     VkSampler smp;
-    VkSemaphore presentImgFinished;
-    VkSemaphore renderImgFinished;
     VkDescriptorSetLayout sp2_descset_layout;
     VkDescriptorSetLayout sp0sp1_descset_layout;
     VkDescriptorPool descpool;

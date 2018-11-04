@@ -9,8 +9,6 @@ public:
         vkDestroyDescriptorSetLayout(device, gfx_descset_layout, nullptr);
         vkDestroyPipelineLayout(device, gfx_pipeline_layout, nullptr);
         vkDestroyPipeline(device, gfx_pipeline, nullptr);
-        vkDestroySemaphore(device, swapImgAcquire, nullptr);
-        vkDestroySemaphore(device, renderImgFinished, nullptr);
         for (const auto iter : fb) {
             vkDestroyFramebuffer(device, iter, nullptr);
         }
@@ -28,7 +26,6 @@ public:
         initSampler();
         initRenderpass();
         initFramebuffer();
-        initSync();
         initGFXPipeline();
         initDescriptor();
         initGFXCommand();
@@ -162,14 +159,6 @@ public:
             };
             vkCreateFramebuffer(device, &info, nullptr, &fb[i]);
         }
-    }
-
-    void initSync() {
-        VkSemaphoreCreateInfo semaInfo {};
-        semaInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-
-        vkCreateSemaphore(device, &semaInfo, nullptr, &swapImgAcquire);
-        vkCreateSemaphore(device, &semaInfo, nullptr, &renderImgFinished);
     }
 
     void initGFXPipeline() {
@@ -389,58 +378,9 @@ public:
         }
     }
 
-    void run() {
-        glfwShowWindow(glfw);
-        uint32_t ImageIndex = 0;
-        while (!glfwWindowShouldClose(glfw)) {
-            glfwPollEvents();
-
-            /* presentation engine will block forever until unused images are available */
-            vkAcquireNextImageKHR(device, swapchain, UINT64_MAX, swapImgAcquire, VK_NULL_HANDLE, &ImageIndex);
-
-            {
-                VkPipelineStageFlags ws[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
-
-                VkSubmitInfo gfxSubmitInfo = {
-                    .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-                    /* stages prior to output color stage can already process while output color stage must
-                    * wait until _swpImgAcquire semaphore is signaled.
-                    */
-                    .pNext = nullptr,
-                    .waitSemaphoreCount = 1,
-                    .pWaitSemaphores = &swapImgAcquire,
-                    .pWaitDstStageMask = ws,
-                    .commandBufferCount = 1,
-                    .pCommandBuffers = &cmdbuf[ImageIndex],
-                    /* signal finish of render process, status from unsignaled to signaled */
-                    .signalSemaphoreCount = 1,
-                    .pSignalSemaphores = &renderImgFinished,
-                };
-                vkQueueSubmit(gfxQ, 1, &gfxSubmitInfo, VK_NULL_HANDLE);
-            }
-
-            VkPresentInfoKHR pi = {
-                .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
-                .pNext = nullptr,
-                /* presentation engine can only start present image until the render executions onto the
-                 * image have been finished (_renderImgFinished semaphore signaled)
-                 */
-                .waitSemaphoreCount = 1,
-                .pWaitSemaphores = &renderImgFinished,
-                .swapchainCount = 1,
-                .pSwapchains = &swapchain,
-                .pImageIndices = &ImageIndex,
-                .pResults = nullptr
-            };
-            vkQueuePresentKHR(gfxQ, &pi);
-        }
-    }
-
 private:
     TexObj texObj {};
     VkSampler smp;
-    VkSemaphore swapImgAcquire;
-    VkSemaphore renderImgFinished;
     VkDescriptorSetLayout gfx_descset_layout;
     VkPipelineLayout gfx_pipeline_layout;
     VkPipeline gfx_pipeline;
